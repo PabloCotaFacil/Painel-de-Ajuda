@@ -12,10 +12,10 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
     {
       name: 'TODAS AS CATEGORIAS',
       slug: 'all',
-      description: 'Acesse todas as categorias e manuais operacionais.',
+      description: 'Acesse todas as categorias e manuais disponíveis.',
       icon: Layers,
-      color: 'bg-cotafacil-teal text-white',
-      accent: 'border-cotafacil-orange',
+      color: 'bg-slate-900 text-white',
+      accent: 'border-cyan-500',
     },
     {
       name: 'CRÉDITO IMOBILIÁRIO',
@@ -23,7 +23,7 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
       description: 'Financiamento habitacional, LTV Caixa/Itaú/BB e Home Equity.',
       icon: Home,
       color: 'bg-white text-slate-800',
-      accent: 'border-cotafacil-teal',
+      accent: 'border-blue-600',
     },
     {
       name: 'CRÉDITO PJ & GIRO',
@@ -31,7 +31,7 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
       description: 'Capital de Giro, FGO, Pronampe e Antecipação.',
       icon: Building2,
       color: 'bg-white text-slate-800',
-      accent: 'border-cotafacil-amber',
+      accent: 'border-emerald-600',
     },
     {
       name: 'CRÉDITO AGRO',
@@ -39,7 +39,7 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
       description: 'Custeio, Investimento, CPR, Moderfrota e Pronaf.',
       icon: Sprout,
       color: 'bg-white text-slate-800',
-      accent: 'border-cotafacil-green',
+      accent: 'border-green-600',
     },
     {
       name: 'REGRAS & TREINAMENTOS',
@@ -47,7 +47,7 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
       description: 'Vídeos de treinamento, resumos de esteira e manuais.',
       icon: BookOpen,
       color: 'bg-white text-slate-800',
-      accent: 'border-slate-400',
+      accent: 'border-purple-600',
     },
     {
       name: 'GATILHOS DE COMISSÃO',
@@ -55,21 +55,22 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
       href: '/comissoes',
       description: 'Tabelas de repasse e aumento de comissão por volume.',
       icon: Award,
-      color: 'bg-gradient-to-br from-cotafacil-orange to-amber-600 text-white',
-      accent: 'border-cotafacil-amber',
+      color: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white',
+      accent: 'border-emerald-400',
     },
   ];
 
   return (
     <section className="py-4">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-extrabold text-cotafacil-teal flex items-center gap-2">
-          <span className="w-2.5 h-6 bg-cotafacil-orange rounded-full inline-block"></span>
+        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2.5 h-6 bg-blue-600 rounded-full inline-block"></span>
           Categorias em Destaque
         </h2>
-        <span className="text-xs font-medium text-slate-500">Clique para filtrar os materiais</span>
+        <span className="text-xs font-medium text-slate-500">Selecione para filtrar os materiais</span>
       </div>
 
+      {/* Responsive Grid with fixed min-height to prevent text cutoffs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {categories.map((cat) => {
           const Icon = cat.icon;
@@ -80,27 +81,29 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
             <Link
               key={cat.slug}
               href={targetUrl}
-              className={`p-5 rounded-2xl border-2 transition-all duration-200 flex flex-col justify-between h-44 card-shadow hover:-translate-y-1 ${
+              className={`p-5 rounded-2xl border-2 transition-all duration-200 flex flex-col justify-between min-h-[185px] card-shadow hover:-translate-y-1 ${
                 cat.color
-              } ${isSelected ? 'ring-4 ring-cotafacil-orange/40 border-cotafacil-orange scale-[1.02]' : 'border-slate-200/80 hover:border-cotafacil-teal'}`}
+              } ${isSelected ? 'ring-4 ring-cyan-400/50 border-cyan-500 scale-[1.02]' : 'border-slate-200/80 hover:border-blue-400'}`}
             >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2 rounded-xl ${cat.slug === 'all' || cat.slug === 'comissoes' ? 'bg-white/20' : 'bg-slate-100 text-cotafacil-teal'}`}>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className={`p-2 rounded-xl shrink-0 ${cat.slug === 'all' || cat.slug === 'comissoes' ? 'bg-white/20' : 'bg-slate-100 text-blue-700'}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   {isSelected && (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-cotafacil-orange text-white uppercase">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-400 text-slate-950 uppercase shrink-0">
                       Ativo
                     </span>
                   )}
                 </div>
-                <h3 className="font-extrabold text-sm tracking-tight mb-1">{cat.name}</h3>
-                <p className="text-xs opacity-85 line-clamp-2 leading-relaxed">{cat.description}</p>
+                <div>
+                  <h3 className="font-extrabold text-xs sm:text-sm tracking-tight leading-snug">{cat.name}</h3>
+                  <p className="text-xs opacity-80 mt-1 line-clamp-2 leading-relaxed">{cat.description}</p>
+                </div>
               </div>
 
-              <div className="pt-2 flex items-center text-xs font-bold gap-1 opacity-90">
-                <span>Acessar</span>
+              <div className="pt-3 flex items-center text-xs font-bold gap-1 opacity-90 border-t border-current/10">
+                <span>Saiba mais</span>
                 <span>→</span>
               </div>
             </Link>

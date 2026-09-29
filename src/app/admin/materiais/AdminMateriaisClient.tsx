@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Upload, FileText, Trash2, Edit2, Shield, Percent, LogOut, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Upload, FileText, Trash2, Edit2, Shield, Percent, LogOut, CheckCircle, AlertCircle, Sparkles, Layout } from 'lucide-react';
 
 interface Attachment {
   id?: string;
@@ -39,17 +39,72 @@ export default function AdminMateriaisClient({
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
 
-  // Form State
+  // Form State for Article
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id || '');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
+  // Form State for Editable Hero Banner
+  const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais Safra 2025/2026');
+  const [bannerTitle, setBannerTitle] = useState('Hub de apoio Imobiliário, Crédito PJ & Agro');
+  const [bannerSubtitle, setBannerSubtitle] = useState('Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.');
+  const [bannerPrimaryBtnText, setBannerPrimaryBtnText] = useState('Ver Regras & Manuais');
+  const [bannerPrimaryBtnUrl, setBannerPrimaryBtnUrl] = useState('/categorias/treinamentos');
+  const [savingBanner, setSavingBanner] = useState(false);
+
   // UI state
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Fetch Banner settings on load
+  useEffect(() => {
+    fetch('/api/banner')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) {
+          setBannerBadgeText(data.badgeText || '');
+          setBannerTitle(data.title || '');
+          setBannerSubtitle(data.subtitle || '');
+          setBannerPrimaryBtnText(data.primaryButtonText || '');
+          setBannerPrimaryBtnUrl(data.primaryButtonUrl || '/categorias/treinamentos');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingBanner(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/banner', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          badgeText: bannerBadgeText,
+          title: bannerTitle,
+          subtitle: bannerSubtitle,
+          primaryButtonText: bannerPrimaryBtnText,
+          primaryButtonUrl: bannerPrimaryBtnUrl,
+        }),
+      });
+
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Banner principal atualizado na Home!' });
+        router.refresh();
+      } else {
+        setMessage({ type: 'error', text: 'Erro ao atualizar o banner' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Erro de conexão com o servidor' });
+    } finally {
+      setSavingBanner(false);
+    }
+  };
 
   const resetForm = () => {
     setEditingArticleId(null);
@@ -68,7 +123,7 @@ export default function AdminMateriaisClient({
     setContent(art.content);
     setCategoryId(art.categoryId);
     setAttachments(art.attachments.map((a) => ({ name: a.name, fileUrl: a.fileUrl })));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 450, behavior: 'smooth' });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,16 +221,16 @@ export default function AdminMateriaisClient({
             <Shield className="w-5 h-5 text-cyan-400" />
             <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Painel Administrativo Privado</span>
           </div>
-          <h1 className="text-2xl font-black mt-1">Gestão de Materiais & Upload de PDFs</h1>
+          <h1 className="text-2xl font-black mt-1">Gestão de Materiais, Banner & PDFs</h1>
         </div>
 
         <div className="flex items-center space-x-3">
           <Link
             href="/admin/comissoes"
-            className="flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition"
+            className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition"
           >
             <Percent className="w-4 h-4" />
-            <span>Gerenciar Gatilhos de Comissão</span>
+            <span>Gestão de Comissões (Gestores)</span>
           </Link>
 
           <button
@@ -202,7 +257,92 @@ export default function AdminMateriaisClient({
         </div>
       )}
 
-      {/* Main Upload / Create Form */}
+      {/* EDITABLE HERO BANNER CONFIGURATION */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+            <Layout className="w-5 h-5 text-cyan-600" />
+            Editar Banner Principal da Home (Avisos Sazonais & Campanhas)
+          </h2>
+          <span className="text-xs text-slate-400 font-medium">Altere o texto do topo a qualquer momento</span>
+        </div>
+
+        <form onSubmit={handleSaveBanner} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">SELINHO / BADGE DO TOPO</label>
+              <input
+                type="text"
+                placeholder="ex: Regras & Manuais Safra 2025/2026 ou Campanha do Mês"
+                value={bannerBadgeText}
+                onChange={(e) => setBannerBadgeText(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">TÍTULO PRINCIPAL DO BANNER</label>
+              <input
+                type="text"
+                placeholder="ex: Hub de apoio Imobiliário, Crédito PJ & Agro"
+                value={bannerTitle}
+                onChange={(e) => setBannerTitle(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-extrabold text-slate-700 block mb-1">TEXTO / SUBTÍTULO DO BANNER</label>
+            <textarea
+              rows={2}
+              placeholder="Descreva o aviso sazonal, regra de campanha ou atualização..."
+              value={bannerSubtitle}
+              onChange={(e) => setBannerSubtitle(e.target.value)}
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">TEXTO DO BOTÃO PRINCIPAL</label>
+              <input
+                type="text"
+                placeholder="ex: Ver Regras & Manuais"
+                value={bannerPrimaryBtnText}
+                onChange={(e) => setBannerPrimaryBtnText(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">LINK DO BOTÃO (URL)</label>
+              <input
+                type="text"
+                placeholder="ex: /categorias/treinamentos"
+                value={bannerPrimaryBtnUrl}
+                onChange={(e) => setBannerPrimaryBtnUrl(e.target.value)}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={savingBanner}
+              className="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center space-x-2"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-300" />
+              <span>{savingBanner ? 'Salvando Banner...' : 'Salvar Banner da Home'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Main Upload / Create Article Form */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">

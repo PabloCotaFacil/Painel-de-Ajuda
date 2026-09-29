@@ -10,8 +10,23 @@ async function main() {
   await prisma.category.deleteMany({});
   await prisma.triggerTier.deleteMany({});
   await prisma.institutionProduct.deleteMany({});
+  await prisma.heroBanner.deleteMany({});
 
-  // 1. Create Categories
+  // 1. Create Default Hero Banner (Editable by Admin)
+  await prisma.heroBanner.create({
+    data: {
+      id: 'default-hero',
+      badgeText: 'Regras & Manuais Safra 2025/2026',
+      title: 'Hub de apoio Imobiliário, Crédito PJ & Agro',
+      subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
+      primaryButtonText: 'Ver Regras & Manuais',
+      primaryButtonUrl: '/categorias/treinamentos',
+      secondaryButtonText: 'Área do Gestor',
+      secondaryButtonUrl: '/admin/login',
+    },
+  });
+
+  // 2. Create Categories
   const catImob = await prisma.category.create({
     data: {
       name: 'Crédito Imobiliário',
@@ -48,7 +63,7 @@ async function main() {
     },
   });
 
-  // 2. Create Articles & Attachments
+  // 3. Create Articles & Attachments
   await prisma.article.create({
     data: {
       title: 'Regras de Financiamento Habitação Caixa - LTV & Documentação',
@@ -58,7 +73,7 @@ async function main() {
 - **Taxas de Juros**: A partir de 9.99% a.a. + TR.
 - **Documentos Obrigatórios**: RG/CPF, Comprovante de Renda (3 últimos holerites ou IR), Matrícula Atualizada do Imóvel (com certidão de ônus e ações).
 
-### Regra Importante de Gatilho
+### Regra Importante
 Operações com LTV acima de 75% exigem análise prévia do comitê de crédito habitacional.`,
       categoryId: catImob.id,
       attachments: {
@@ -115,13 +130,12 @@ Operações com LTV acima de 75% exigem análise prévia do comitê de crédito 
     },
   });
 
-  // 3. Create Institution Products & Production Trigger Tiers
-  // Itaú Imobiliário
+  // 4. Create Institution Products & Production Trigger Tiers (Restricted to Gestores)
   const itauImob = await prisma.institutionProduct.create({
     data: {
       bankName: 'Itaú Imobiliário',
-      segment: 'Imobiliário',
-      description: 'Financiamento residencial e comercial SBPE com gatilhos por volume mensal.',
+      segment: 'Crédito Imobiliário',
+      description: 'Financiamento residencial e comercial SBPE com gatilhos por volume mensal para Gestores.',
     },
   });
 
@@ -142,18 +156,17 @@ Operações com LTV acima de 75% exigem análise prévia do comitê de crédito 
       {
         institutionProductId: itauImob.id,
         minVolume: 1000000,
-        maxVolume: null, // 1M+
+        maxVolume: null,
         commissionRate: 2.0,
       },
     ],
   });
 
-  // Banco do Brasil Agro
   const bbAgro = await prisma.institutionProduct.create({
     data: {
       bankName: 'Banco do Brasil Agro',
       segment: 'Crédito Agro',
-      description: 'Custeio e Investimento Agrícola com bonificação por produção semestral.',
+      description: 'Custeio e Investimento Agrícola com bonificação por produção.',
     },
   });
 
@@ -174,40 +187,8 @@ Operações com LTV acima de 75% exigem análise prévia do comitê de crédito 
       {
         institutionProductId: bbAgro.id,
         minVolume: 3000000,
-        maxVolume: null, // 3M+
-        commissionRate: 1.8,
-      },
-    ],
-  });
-
-  // Santander Crédito PJ
-  const santanderPJ = await prisma.institutionProduct.create({
-    data: {
-      bankName: 'Santander Crédito PJ',
-      segment: 'Crédito PJ',
-      description: 'Capital de Giro Clean e Antecipação de Recebíveis com gatilho de volume.',
-    },
-  });
-
-  await prisma.triggerTier.createMany({
-    data: [
-      {
-        institutionProductId: santanderPJ.id,
-        minVolume: 0,
-        maxVolume: 299999.99,
-        commissionRate: 1.3,
-      },
-      {
-        institutionProductId: santanderPJ.id,
-        minVolume: 300000,
-        maxVolume: 799999.99,
-        commissionRate: 1.6,
-      },
-      {
-        institutionProductId: santanderPJ.id,
-        minVolume: 800000,
         maxVolume: null,
-        commissionRate: 2.1,
+        commissionRate: 1.8,
       },
     ],
   });

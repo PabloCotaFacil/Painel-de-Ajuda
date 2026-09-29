@@ -13,6 +13,26 @@ export default async function HomePage({
 }) {
   const query = searchParams.q || '';
 
+  // Fetch Editable Hero Banner config
+  let heroBanner = await prisma.heroBanner.findUnique({
+    where: { id: 'default-hero' },
+  });
+
+  if (!heroBanner) {
+    heroBanner = {
+      id: 'default-hero',
+      badgeText: 'Regras & Manuais Safra 2025/2026',
+      title: 'Hub de apoio Imobiliário, Crédito PJ & Agro',
+      subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
+      primaryButtonText: 'Ver Regras & Manuais',
+      primaryButtonUrl: '/categorias/treinamentos',
+      secondaryButtonText: 'Área do Gestor',
+      secondaryButtonUrl: '/admin/login',
+      updatedAt: new Date(),
+    };
+  }
+
+  // Fetch latest articles
   const articles = await prisma.article.findMany({
     where: query
       ? {
@@ -33,36 +53,43 @@ export default async function HomePage({
 
   return (
     <div className="space-y-10">
-      {/* Hero / Banner Announcement */}
-      <div className="gradient-header rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="max-w-xl z-10">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur px-3 py-1 rounded-full text-xs text-cyan-300 font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>Regras & Manuais safra 2025/2026</span>
-          </div>
+      {/* DYNAMIC EDITABLE HERO BANNER (Configurable via Admin) */}
+      <div className="gradient-header rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
+        <div className="max-w-xl z-10 space-y-3">
+          {heroBanner.badgeText && (
+            <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur px-3.5 py-1 rounded-full text-xs text-cyan-300 font-semibold">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>{heroBanner.badgeText}</span>
+            </div>
+          )}
           <h1 className="text-2xl sm:text-4xl font-black leading-tight tracking-tight">
-            Hub de apoio <span className="text-cyan-400">Imobiliário</span>, <span className="text-emerald-400">Crédito PJ</span> & <span className="text-cyan-200">Agro</span>
+            {heroBanner.title}
           </h1>
-          <p className="mt-3 text-slate-200 text-sm leading-relaxed">
-            Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e simulador de gatilhos de repasse de comissão.
+          <p className="text-slate-200 text-sm leading-relaxed">
+            {heroBanner.subtitle}
           </p>
         </div>
 
         <div className="z-10 flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
-          <Link
-            href="/comissoes"
-            className="inline-flex items-center justify-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold px-6 py-3.5 rounded-2xl transition shadow-lg text-sm whitespace-nowrap"
-          >
-            <span>Ver Gatilhos de Comissão</span>
-            <ArrowRight className="w-4 h-4 shrink-0" />
-          </Link>
-          <Link
-            href="/admin/materiais"
-            className="inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-3.5 rounded-2xl border border-white/20 transition text-sm whitespace-nowrap"
-          >
-            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>Upload de Materiais (Admin)</span>
-          </Link>
+          {heroBanner.primaryButtonText && (
+            <Link
+              href={heroBanner.primaryButtonUrl || '/categorias/treinamentos'}
+              className="inline-flex items-center justify-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold px-6 py-3.5 rounded-2xl transition shadow-lg text-sm whitespace-nowrap"
+            >
+              <span>{heroBanner.primaryButtonText}</span>
+              <ArrowRight className="w-4 h-4 shrink-0" />
+            </Link>
+          )}
+
+          {heroBanner.secondaryButtonText && (
+            <Link
+              href={heroBanner.secondaryButtonUrl || '/admin/login'}
+              className="inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-3.5 rounded-2xl border border-white/20 transition text-sm whitespace-nowrap"
+            >
+              <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>{heroBanner.secondaryButtonText}</span>
+            </Link>
+          )}
         </div>
       </div>
 

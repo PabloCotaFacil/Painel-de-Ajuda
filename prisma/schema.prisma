@@ -14,7 +14,7 @@ model Category {
   name        String
   slug        String    @unique
   description String?
-  icon        String?   // Icon identifier (e.g. "home", "building", "sprout", "shield")
+  icon        String?   // Icon identifier
   articles    Article[]
 }
 
@@ -41,7 +41,7 @@ model Attachment {
 
 model InstitutionProduct {
   id           String        @id @default(uuid())
-  bankName     String        // ex: "Caixa Econômica", "Itaú", "Banco do Brasil Agro", "Santander PJ"
+  bankName     String        // ex: "Caixa Econômica", "Itaú", "Banco do Brasil Agro"
   segment      String        // "Imobiliário", "Crédito PJ", "Crédito Agro"
   description  String?
   triggerTiers TriggerTier[]
@@ -51,11 +51,23 @@ model InstitutionProduct {
 
 model TriggerTier {
   id                   String             @id @default(uuid())
-  minVolume            Float              // Minimum volume in BRL (ex: 0, 500000)
+  minVolume            Float              // Minimum volume in BRL
   maxVolume            Float?             // Maximum volume in BRL (null means unlimited "+")
   commissionRate       Float              // Percentage rate (ex: 1.5 for 1.5%)
   institutionProductId String
   institutionProduct   InstitutionProduct @relation(fields: [institutionProductId], references: [id], onDelete: Cascade)
+}
+
+model HeroBanner {
+  id                   String   @id @default("default-hero")
+  badgeText            String   @default("Avisos & Regras Safra 2025/2026")
+  title                String   @default("Hub de apoio Imobiliário, Crédito PJ & Agro")
+  subtitle             String   @default("Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e simulador de gatilhos de repasse de comissão.")
+  primaryButtonText    String   @default("Ver Tabela de Comissionamento")
+  primaryButtonUrl     String   @default("/comissoes")
+  secondaryButtonText  String?  @default("Upload de Materiais (Admin)")
+  secondaryButtonUrl   String?  @default("/admin/materiais")
+  updatedAt            DateTime @updatedAt
 }
 
 model AdminSession {

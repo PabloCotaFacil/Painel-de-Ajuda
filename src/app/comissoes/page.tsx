@@ -1,11 +1,53 @@
 import TriggerCalculator from '@/components/TriggerCalculator';
 import { prisma } from '@/lib/prisma';
+import { checkIsAdmin } from '@/lib/auth';
 import Link from 'next/link';
-import { Award, ShieldAlert, Sparkles, Building2 } from 'lucide-react';
+import { Lock, Award, Building2, ShieldAlert } from 'lucide-react';
 
 export const revalidate = 0;
 
 export default async function ComissoesPage() {
+  const isAdmin = await checkIsAdmin();
+
+  // If not authenticated as Gestor/Admin, present restricted access screen
+  if (!isAdmin) {
+    return (
+      <div className="max-w-xl mx-auto py-12">
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 card-shadow text-center space-y-6">
+          <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-3xl flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="bg-amber-100 text-amber-900 text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+              Área Restrita aos Gestores das Lojas
+            </span>
+            <h1 className="text-2xl font-black text-slate-900 mt-2">
+              Tabela de Comissionamento & Gatilhos Privados
+            </h1>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              As tabelas de repasse e regras de gatilhos de faturamento são de acesso exclusivo aos Gestores das Lojas CotaFácil.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
+            <Link
+              href="/admin/login"
+              className="py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl transition shadow-md text-sm flex items-center justify-center space-x-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Entrar como Gestor da Loja</span>
+            </Link>
+            <Link href="/" className="text-xs font-bold text-slate-500 hover:underline">
+              Voltar ao Hub de Apoio Público
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated Gestor View
   const products = await prisma.institutionProduct.findMany({
     include: {
       triggerTiers: {
@@ -24,12 +66,12 @@ export default async function ComissoesPage() {
       {/* Top Banner */}
       <div className="gradient-header rounded-3xl p-6 sm:p-10 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
-          <span className="bg-emerald-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider">
-            Gatilhos de Produção Mensal
+          <span className="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider">
+            Acesso Restrito aos Gestores das Lojas
           </span>
-          <h1 className="text-3xl font-black mt-3">Tabelas de Comissão & Escalonamento</h1>
+          <h1 className="text-3xl font-black mt-3">Tabela de Comissionamento & Gatilhos</h1>
           <p className="text-slate-200 text-sm mt-2 max-w-2xl">
-            Acompanhe o aumento percentual de comissionamento conforme a sua produção cresce no mês nos segmentos Imobiliário, Crédito PJ e Agro.
+            Painel exclusivo para gestores acompanharem as faixas de faturamento mensal e repasses por instituição.
           </p>
         </div>
 
@@ -38,7 +80,7 @@ export default async function ComissoesPage() {
           className="bg-white text-slate-900 font-extrabold px-5 py-3 rounded-2xl hover:bg-slate-100 transition shadow-lg text-sm shrink-0 flex items-center gap-2"
         >
           <Award className="w-4 h-4 text-emerald-600" />
-          <span>Configurar Gatilhos (Admin)</span>
+          <span>Editar Gatilhos no Painel</span>
         </Link>
       </div>
 

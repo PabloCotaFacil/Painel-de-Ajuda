@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Building2, Sprout, BookOpen, Layers, Award } from 'lucide-react';
+import { Home, Building2, Sprout, BookOpen, Layers } from 'lucide-react';
 
 interface CategoryCardsProps {
   activeSlug?: string;
@@ -49,15 +49,6 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
       color: 'bg-white text-slate-800',
       accent: 'border-purple-600',
     },
-    {
-      name: 'GATILHOS DE COMISSÃO',
-      slug: 'comissoes',
-      href: '/comissoes',
-      description: 'Tabelas de repasse e aumento de comissão por volume.',
-      icon: Award,
-      color: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white',
-      accent: 'border-emerald-400',
-    },
   ];
 
   return (
@@ -70,12 +61,12 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
         <span className="text-xs font-medium text-slate-500">Selecione para filtrar os materiais</span>
       </div>
 
-      {/* Responsive Grid with fixed min-height to prevent text cutoffs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* Grid of Public Categories */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isSelected = activeSlug === cat.slug || (!activeSlug && cat.slug === 'all');
-          const targetUrl = cat.href || (cat.slug === 'all' ? '/' : `/categorias/${cat.slug}`);
+          const targetUrl = cat.slug === 'all' ? '/' : `/categorias/${cat.slug}`;
 
           return (
             <Link
@@ -87,7 +78,7 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className={`p-2 rounded-xl shrink-0 ${cat.slug === 'all' || cat.slug === 'comissoes' ? 'bg-white/20' : 'bg-slate-100 text-blue-700'}`}>
+                  <div className={`p-2 rounded-xl shrink-0 ${cat.slug === 'all' ? 'bg-white/20' : 'bg-slate-100 text-blue-700'}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   {isSelected && (
@@ -103,7 +94,7 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
               </div>
 
               <div className="pt-3 flex items-center text-xs font-bold gap-1 opacity-90 border-t border-current/10">
-                <span>Saiba mais</span>
+                <span>Acessar</span>
                 <span>→</span>
               </div>
             </Link>

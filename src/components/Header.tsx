@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Search, Shield, Percent, Home, BookOpen } from 'lucide-react';
+import { Search, Shield, Home, BookOpen, Lock } from 'lucide-react';
 
 export default function Header({ initialSearch = '' }: { initialSearch?: string }) {
   const [search, setSearch] = useState(initialSearch);
@@ -24,7 +24,7 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
       {/* Top Utility Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 border-b border-white/10 flex flex-wrap justify-between items-center gap-2 text-xs sm:text-sm">
         <div className="flex items-center space-x-2">
-          <span className="bg-cyan-500 text-slate-950 font-black px-2.5 py-0.5 rounded text-[11px] tracking-wide whitespace-nowrap">
+          <span className="bg-cyan-500 text-slate-950 font-black px-2.5 py-0.5 rounded text-[11px] tracking-wide whitespace-nowrap uppercase">
             HUB DE APOIO
           </span>
           <span className="hidden md:inline text-slate-200 font-medium">
@@ -34,11 +34,11 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
 
         <div className="flex items-center space-x-3">
           <Link
-            href="/comissoes"
-            className="flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3.5 py-1.5 rounded-full transition shadow-sm text-xs whitespace-nowrap"
+            href="/admin/comissoes"
+            className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3.5 py-1.5 rounded-full transition shadow-sm text-xs whitespace-nowrap"
           >
-            <Percent className="w-3.5 h-3.5 shrink-0" />
-            <span>Gatilhos de Comissão</span>
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <span>Área do Gestor (Comissões)</span>
           </Link>
           <Link
             href="/admin/materiais"
@@ -50,18 +50,18 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
         </div>
       </div>
 
-      {/* Main Header Content with CotaFácil Logo */}
+      {/* Main Header Content with Transparent CotaFácil Logo */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-5">
         {/* Brand / Logo */}
         <Link href="/" className="flex items-center space-x-4 group shrink-0">
-          <div className="bg-white p-2.5 rounded-2xl shadow-lg border border-white/20 flex items-center">
+          <div className="p-1.5 flex items-center">
             <Image
               src="/cotafacil-logo.png"
               alt="CotaFácil Soluções Financeiras"
-              width={190}
-              height={50}
+              width={180}
+              height={55}
               priority
-              className="h-10 w-auto object-contain"
+              className="h-12 w-auto object-contain drop-shadow-md"
             />
           </div>
           <div className="hidden sm:block border-l border-white/20 pl-4">
@@ -112,9 +112,6 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
           <Link href="/categorias/treinamentos" className="hover:text-cyan-300 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0">
             <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>Regras & Treinamentos</span>
-          </Link>
-          <Link href="/comissoes" className="hover:text-emerald-300 transition text-emerald-400 font-extrabold whitespace-nowrap shrink-0">
-            ⚡ Gatilhos de Comissão
           </Link>
         </div>
       </div>

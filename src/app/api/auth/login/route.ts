@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAdminPassword } from '@/lib/auth';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
   try {
     const { password } = await request.json();
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
+    const adminPassword = await getAdminPassword();
 
     if (password !== adminPassword) {
       return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });

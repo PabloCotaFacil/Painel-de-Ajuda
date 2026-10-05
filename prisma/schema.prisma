@@ -62,13 +62,13 @@ model TriggerTier {
 
 model HeroBanner {
   id                   String   @id @default("default-hero")
-  badgeText            String   @default("Avisos & Regras Safra 2025/2026")
+  badgeText            String   @default("Regras & Manuais Safra 2025/2026")
   title                String   @default("Hub de apoio Imobiliário, Crédito PJ & Agro")
-  subtitle             String   @default("Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e simulador de gatilhos de repasse de comissão.")
-  primaryButtonText    String   @default("Ver Tabela de Comissionamento")
-  primaryButtonUrl     String   @default("/comissoes")
-  secondaryButtonText  String?  @default("Upload de Materiais (Admin)")
-  secondaryButtonUrl   String?  @default("/admin/materiais")
+  subtitle             String   @default("Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.")
+  primaryButtonText    String   @default("Ver Regras & Manuais")
+  primaryButtonUrl     String   @default("/categorias/treinamentos")
+  secondaryButtonText  String?  @default("")
+  secondaryButtonUrl   String?  @default("")
   updatedAt            DateTime @updatedAt
 }
 
@@ -77,4 +77,9 @@ model AdminSession {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model SystemConfig {
+  key   String @id
+  value String
 }

@@ -2,8 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Plus, Upload, FileText, Trash2, Edit2, Shield, Percent, LogOut, CheckCircle, AlertCircle, Sparkles, Layout } from 'lucide-react';
+import {
+  Plus,
+  Upload,
+  FileText,
+  Trash2,
+  Edit2,
+  Shield,
+  LogOut,
+  CheckCircle,
+  AlertCircle,
+  Sparkles,
+  Layout,
+  Lock,
+  KeyRound,
+} from 'lucide-react';
 
 interface Attachment {
   id?: string;
@@ -36,6 +49,7 @@ export default function AdminMateriaisClient({
 }) {
   const router = useRouter();
 
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
 
@@ -49,15 +63,42 @@ export default function AdminMateriaisClient({
   // Form State for Editable Hero Banner
   const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais Safra 2025/2026');
   const [bannerTitle, setBannerTitle] = useState('Hub de apoio Imobiliário, Crédito PJ & Agro');
-  const [bannerSubtitle, setBannerSubtitle] = useState('Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.');
+  const [bannerSubtitle, setBannerSubtitle] = useState(
+    'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.'
+  );
   const [bannerPrimaryBtnText, setBannerPrimaryBtnText] = useState('Ver Regras & Manuais');
   const [bannerPrimaryBtnUrl, setBannerPrimaryBtnUrl] = useState('/categorias/treinamentos');
   const [savingBanner, setSavingBanner] = useState(false);
+
+  // Password Change State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // UI state
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Ensure categories are loaded if initial list was empty
+  useEffect(() => {
+    if (categories.length === 0) {
+      fetch('/api/categories')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setCategories(data);
+            if (!categoryId) {
+              setCategoryId(data[0].id);
+            }
+          }
+        })
+        .catch(console.error);
+    } else if (!categoryId && categories[0]?.id) {
+      setCategoryId(categories[0].id);
+    }
+  }, [categories, categoryId]);
 
   // Fetch Banner settings on load
   useEffect(() => {
@@ -106,12 +147,50 @@ export default function AdminMateriaisClient({
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      setPasswordMessage({ type: 'error', text: 'A nova senha deve ter no mínimo 4 caracteres.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'A confirmação não confere com a nova senha.' });
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const res = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setPasswordMessage({ type: 'success', text: 'Senha do Painel Admin alterada com sucesso!' });
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setPasswordMessage({ type: 'error', text: data.error || 'Erro ao alterar a senha.' });
+      }
+    } catch (err) {
+      setPasswordMessage({ type: 'error', text: 'Falha de comunicação com o servidor.' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const resetForm = () => {
     setEditingArticleId(null);
     setTitle('');
     setSummary('');
     setContent('');
-    setCategoryId(initialCategories[0]?.id || '');
+    setCategoryId(categories[0]?.id || '');
     setAttachments([]);
     setMessage(null);
   };
@@ -123,7 +202,7 @@ export default function AdminMateriaisClient({
     setContent(art.content);
     setCategoryId(art.categoryId);
     setAttachments(art.attachments.map((a) => ({ name: a.name, fileUrl: a.fileUrl })));
-    window.scrollTo({ top: 450, behavior: 'smooth' });
+    window.scrollTo({ top: 500, behavior: 'smooth' });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,7 +240,15 @@ export default function AdminMateriaisClient({
     setSaving(true);
     setMessage(null);
 
-    const payload = { title, summary, content, categoryId, attachments };
+    const targetCategoryId = categoryId || categories[0]?.id;
+
+    if (!targetCategoryId) {
+      setMessage({ type: 'error', text: 'Nenhuma categoria disponível para associar ao material.' });
+      setSaving(false);
+      return;
+    }
+
+    const payload = { title, summary, content, categoryId: targetCategoryId, attachments };
 
     try {
       const url = editingArticleId ? `/api/articles/${editingArticleId}` : '/api/articles';
@@ -225,20 +312,12 @@ export default function AdminMateriaisClient({
         </div>
 
         <div className="flex items-center space-x-3">
-          <Link
-            href="/admin/comissoes"
-            className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition"
-          >
-            <Percent className="w-4 h-4" />
-            <span>Gestão de Comissões (Gestores)</span>
-          </Link>
-
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-1 bg-rose-900/60 hover:bg-rose-900 text-rose-200 border border-rose-700/50 px-3.5 py-2 rounded-xl text-xs font-bold transition"
+            className="flex items-center space-x-1.5 bg-rose-900/60 hover:bg-rose-900 text-rose-200 border border-rose-700/50 px-4 py-2.5 rounded-xl text-xs font-bold transition"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sair</span>
+            <span>Sair do Painel</span>
           </button>
         </div>
       </div>
@@ -252,7 +331,11 @@ export default function AdminMateriaisClient({
               : 'bg-rose-50 text-rose-800 border border-rose-300'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-rose-600" />}
+          {message.type === 'success' ? (
+            <CheckCircle className="w-5 h-5 text-emerald-600" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600" />
+          )}
           <span>{message.text}</span>
         </div>
       )}
@@ -281,7 +364,7 @@ export default function AdminMateriaisClient({
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-xs font-extrabold text-slate-700 block mb-1">TÍTULO PRINCIPAL DO BANNER</label>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">TÍTULO PRINCIPAL</label>
               <input
                 type="text"
                 placeholder="ex: Hub de apoio Imobiliário, Crédito PJ & Agro"
@@ -294,10 +377,10 @@ export default function AdminMateriaisClient({
           </div>
 
           <div>
-            <label className="text-xs font-extrabold text-slate-700 block mb-1">TEXTO / SUBTÍTULO DO BANNER</label>
+            <label className="text-xs font-extrabold text-slate-700 block mb-1">SUBTÍTULO / MENSAGEM DO AVISO</label>
             <textarea
               rows={2}
-              placeholder="Descreva o aviso sazonal, regra de campanha ou atualização..."
+              placeholder="Descreva detalhes, orientações ou regras vigentes..."
               value={bannerSubtitle}
               onChange={(e) => setBannerSubtitle(e.target.value)}
               className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
@@ -310,18 +393,15 @@ export default function AdminMateriaisClient({
               <label className="text-xs font-extrabold text-slate-700 block mb-1">TEXTO DO BOTÃO PRINCIPAL</label>
               <input
                 type="text"
-                placeholder="ex: Ver Regras & Manuais"
                 value={bannerPrimaryBtnText}
                 onChange={(e) => setBannerPrimaryBtnText(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
               />
             </div>
-
             <div>
-              <label className="text-xs font-extrabold text-slate-700 block mb-1">LINK DO BOTÃO (URL)</label>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">LINK DO BOTÃO PRINCIPAL</label>
               <input
                 type="text"
-                placeholder="ex: /categorias/treinamentos"
                 value={bannerPrimaryBtnUrl}
                 onChange={(e) => setBannerPrimaryBtnUrl(e.target.value)}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
@@ -376,12 +456,17 @@ export default function AdminMateriaisClient({
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
               >
-                {initialCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {categories.length === 0 ? (
+                  <option value="">Carregando categorias...</option>
+                ) : (
+                  categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -393,47 +478,58 @@ export default function AdminMateriaisClient({
               placeholder="Descreva brevemente as principais mudanças ou regras contidas neste material..."
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-extrabold text-slate-700 block mb-1">CONTEÚDO COMPLETO OU REGRAS DETALHADAS</label>
+            <label className="text-xs font-extrabold text-slate-700 block mb-1">
+              CONTEÚDO / EXPLICAÇÃO DETALHADA DAS REGRAS
+            </label>
             <textarea
               rows={6}
-              placeholder="Escreva aqui as taxas, tabelas, condições de enquadramento, documentos necessários..."
+              placeholder="Descreva taxas, prazos, exigências, requisitos, orientações e passo a passo de aprovação..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-800 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
             />
           </div>
 
-          {/* Upload PDF Section */}
-          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-            <label className="text-xs font-extrabold text-slate-700 block">ANEXAR PDF / ARQUIVO DE TREINAMENTO</label>
-            
-            <div className="flex items-center space-x-4">
-              <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition shadow">
+          {/* Attachments Section */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-cyan-600" />
+                  PDFs & Materiais Anexos
+                </h3>
+                <p className="text-xs text-slate-500">Faça upload de cartilhas, tabelas e resumos para download dos usuários.</p>
+              </div>
+
+              <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition shadow-sm">
                 <Upload className="w-4 h-4" />
-                <span>{uploading ? 'Enviando...' : 'Selecionar Arquivo PDF'}</span>
-                <input type="file" accept=".pdf,.doc,.docx,.png,.jpg" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                <span>{uploading ? 'Enviando PDF...' : 'Subir Arquivo PDF'}</span>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
               </label>
-              <span className="text-xs text-slate-400">Aceita arquivos PDF, DOCX e Imagens</span>
             </div>
 
-            {/* List attached files */}
             {attachments.length > 0 && (
-              <div className="pt-2 space-y-2">
-                <span className="text-xs font-bold text-slate-600 block">Arquivos Anexados:</span>
+              <div className="space-y-2 pt-2">
                 {attachments.map((att, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                    <span className="font-bold text-slate-700 truncate max-w-md">{att.name}</span>
+                  <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="text-xs font-bold text-slate-800 truncate">{att.name}</span>
                     <button
                       type="button"
                       onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
-                      className="text-rose-600 hover:text-rose-800 font-bold ml-2"
+                      className="text-rose-600 hover:text-rose-800 text-xs font-bold"
                     >
                       Remover
                     </button>
@@ -443,83 +539,132 @@ export default function AdminMateriaisClient({
             )}
           </div>
 
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-            {editingArticleId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition"
-              >
-                Cancelar
-              </button>
-            )}
+          <div className="flex justify-end gap-3 pt-3">
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs transition shadow-lg flex items-center space-x-2"
+              className="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-sm transition shadow-md"
             >
-              <span>{saving ? 'Salvando...' : editingArticleId ? 'Atualizar Material' : 'Publicar Material'}</span>
+              {saving ? 'Publicando...' : editingArticleId ? 'Salvar Alterações' : 'Publicar Material'}
             </button>
           </div>
         </form>
       </div>
 
-      {/* Materials List Table */}
+      {/* SECURITY / PASSWORD MANAGEMENT */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-4">
-        <h2 className="text-xl font-black text-slate-900">Materiais Cadastrados no Site</h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 uppercase border-b border-slate-200">
-                <th className="py-3 px-3 font-extrabold">Título do Material</th>
-                <th className="py-3 px-3 font-extrabold">Categoria</th>
-                <th className="py-3 px-3 font-extrabold">Anexos PDF</th>
-                <th className="py-3 px-3 font-extrabold text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {articles.map((art) => (
-                <tr key={art.id} className="hover:bg-slate-50 transition">
-                  <td className="py-3 px-3 font-extrabold text-slate-900 max-w-xs truncate">{art.title}</td>
-                  <td className="py-3 px-3">
-                    <span className="bg-blue-50 text-blue-800 font-bold px-2 py-0.5 rounded text-[11px]">
-                      {art.category.name}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3">
-                    {art.attachments.length > 0 ? (
-                      <span className="text-emerald-700 font-bold flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>{art.attachments.length} PDF(s)</span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 italic">Sem PDF</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-3 text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => handleEditClick(art)}
-                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(art.id)}
-                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+            <KeyRound className="w-5 h-5 text-amber-500" />
+            Segurança: Alterar Senha de Acesso do Administrador
+          </h2>
+          <span className="text-xs text-slate-400 font-medium">Troque a senha a qualquer momento</span>
         </div>
+
+        {passwordMessage && (
+          <div
+            className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+              passwordMessage.type === 'success'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                : 'bg-rose-50 text-rose-800 border border-rose-300'
+            }`}
+          >
+            {passwordMessage.type === 'success' ? (
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600" />
+            )}
+            <span>{passwordMessage.text}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">NOVA SENHA</label>
+              <input
+                type="password"
+                placeholder="Digite a nova senha segura..."
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">CONFIRMAR NOVA SENHA</label>
+              <input
+                type="password"
+                placeholder="Repita a nova senha..."
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              disabled={changingPassword}
+              className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs transition shadow flex items-center space-x-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>{changingPassword ? 'Atualizando Senha...' : 'Salvar Nova Senha'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Published Materials List */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-4">
+        <h2 className="text-xl font-black text-slate-900 border-b border-slate-100 pb-3">
+          Materiais Publicados no Sistema ({articles.length})
+        </h2>
+
+        {articles.length === 0 ? (
+          <p className="text-sm text-slate-400 py-6 text-center">Nenhum material publicado ainda.</p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {articles.map((art) => (
+              <div key={art.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
+                      {art.category?.name || 'Geral'}
+                    </span>
+                    {art.attachments.length > 0 && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                        {art.attachments.length} anexo(s)
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-extrabold text-slate-900 text-sm">{art.title}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{art.summary}</p>
+                </div>
+
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    onClick={() => handleEditClick(art)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition"
+                    title="Editar"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(art.id)}
+                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

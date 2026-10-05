@@ -1,6 +1,7 @@
 import CategoryCards from '@/components/CategoryCards';
 import ArticleCard from '@/components/ArticleCard';
 import { prisma } from '@/lib/prisma';
+import { getOrSeedCategories } from '@/lib/categories';
 import Link from 'next/link';
 import { Sparkles, ArrowRight, ShieldCheck, FileText } from 'lucide-react';
 
@@ -12,6 +13,9 @@ export default async function HomePage({
   searchParams: { q?: string };
 }) {
   const query = searchParams.q || '';
+
+  // Garante que as categorias padrão existam
+  await getOrSeedCategories();
 
   // Fetch Editable Hero Banner config
   let heroBanner = await prisma.heroBanner.findUnique({
@@ -26,11 +30,23 @@ export default async function HomePage({
       subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
       primaryButtonText: 'Ver Regras & Manuais',
       primaryButtonUrl: '/categorias/treinamentos',
-      secondaryButtonText: 'Área do Gestor',
-      secondaryButtonUrl: '/admin/login',
+      secondaryButtonText: null,
+      secondaryButtonUrl: null,
       updatedAt: new Date(),
     };
   }
+
+  // Filtrar para nunca expor gestor ou admin no banner público
+  const isGestorOrAdminButton =
+    heroBanner.secondaryButtonUrl?.includes('admin') ||
+    heroBanner.secondaryButtonUrl?.includes('comissoes') ||
+    heroBanner.secondaryButtonText?.toLowerCase().includes('gestor') ||
+    heroBanner.secondaryButtonText?.toLowerCase().includes('admin');
+
+  const showSecondaryButton =
+    Boolean(heroBanner.secondaryButtonText?.trim()) &&
+    Boolean(heroBanner.secondaryButtonUrl?.trim()) &&
+    !isGestorOrAdminButton;
 
   // Fetch latest articles
   const articles = await prisma.article.findMany({
@@ -81,12 +97,11 @@ export default async function HomePage({
             </Link>
           )}
 
-          {heroBanner.secondaryButtonText && (
+          {showSecondaryButton && heroBanner.secondaryButtonText && (
             <Link
-              href={heroBanner.secondaryButtonUrl || '/admin/login'}
+              href={heroBanner.secondaryButtonUrl || '/'}
               className="inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-3.5 rounded-2xl border border-white/20 transition text-sm whitespace-nowrap"
             >
-              <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
               <span>{heroBanner.secondaryButtonText}</span>
             </Link>
           )}

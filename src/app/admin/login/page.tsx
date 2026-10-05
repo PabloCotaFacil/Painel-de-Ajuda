@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           </div>
           <h1 className="text-2xl font-black text-slate-900">Área Administrativa</h1>
           <p className="text-xs text-slate-500">
-            Digite sua senha para acessar o painel privado de gestão de PDFs, materiais e comissões.
+            Digite sua senha para acessar o painel privado de gestão de PDFs e regras.
           </p>
         </div>
 
@@ -69,7 +69,6 @@ export default function AdminLoginPage() {
               />
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Senha padrão em desenvolvimento: <code className="font-bold text-slate-700">admin</code></p>
           </div>
 
           <button

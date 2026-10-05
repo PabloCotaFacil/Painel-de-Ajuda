@@ -32,21 +32,8 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
           </span>
         </div>
 
-        <div className="flex items-center space-x-3">
-          <Link
-            href="/admin/comissoes"
-            className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3.5 py-1.5 rounded-full transition shadow-sm text-xs whitespace-nowrap"
-          >
-            <Lock className="w-3.5 h-3.5 shrink-0" />
-            <span>Área do Gestor (Comissões)</span>
-          </Link>
-          <Link
-            href="/admin/materiais"
-            className="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white px-3.5 py-1.5 rounded-full border border-white/20 transition text-xs whitespace-nowrap"
-          >
-            <Shield className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Painel Admin</span>
-          </Link>
+        <div className="text-[11px] text-cyan-200/80 font-medium hidden sm:block">
+          Portal Interno de Suporte & Manuais
         </div>
       </div>
 
@@ -54,14 +41,14 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-5">
         {/* Brand / Logo */}
         <Link href="/" className="flex items-center space-x-4 group shrink-0">
-          <div className="p-1.5 flex items-center">
+          <div className="flex items-center">
             <Image
               src="/cotafacil-logo.png"
               alt="CotaFácil Soluções Financeiras"
-              width={180}
-              height={55}
+              width={170}
+              height={52}
               priority
-              className="h-12 w-auto object-contain drop-shadow-md"
+              className="h-12 w-auto object-contain filter drop-shadow-[0_2px_6px_rgba(255,255,255,0.35)]"
             />
           </div>
           <div className="hidden sm:block border-l border-white/20 pl-4">

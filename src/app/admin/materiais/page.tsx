@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
+import { getOrSeedCategories } from '@/lib/categories';
 import { redirect } from 'next/navigation';
 import AdminMateriaisClient from './AdminMateriaisClient';
 
@@ -11,7 +12,7 @@ export default async function AdminMateriaisPage() {
     redirect('/admin/login');
   }
 
-  const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+  const categories = await getOrSeedCategories();
   const articles = await prisma.article.findMany({
     include: {
       category: true,

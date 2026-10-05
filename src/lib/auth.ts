@@ -7,15 +7,48 @@ export async function checkIsAdmin() {
 
   if (!token) return false;
 
-  const session = await prisma.adminSession.findUnique({
-    where: { token },
-  });
+  try {
+    const session = await prisma.adminSession.findUnique({
+      where: { token },
+    });
 
-  if (!session) return false;
-  if (session.expiresAt < new Date()) {
-    await prisma.adminSession.delete({ where: { id: session.id } }).catch(() => {});
+    if (!session) return false;
+    if (session.expiresAt < new Date()) {
+      await prisma.adminSession.delete({ where: { id: session.id } }).catch(() => {});
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erro ao verificar sessão admin:', error);
     return false;
   }
+}
 
-  return true;
+export async function getAdminPassword(): Promise<string> {
+  try {
+    const config = await prisma.systemConfig.findUnique({
+      where: { key: 'admin_password' },
+    });
+    if (config?.value) {
+      return config.value;
+    }
+  } catch (error) {
+    console.error('Erro ao buscar senha no banco:', error);
+  }
+  return process.env.ADMIN_PASSWORD || 'admin';
+}
+
+export async function setAdminPassword(newPassword: string): Promise<boolean> {
+  try {
+    await prisma.systemConfig.upsert({
+      where: { key: 'admin_password' },
+      update: { value: newPassword },
+      create: { key: 'admin_password', value: newPassword },
+    });
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar nova senha:', error);
+    return false;
+  }
 }

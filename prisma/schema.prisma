@@ -25,6 +25,7 @@ model Article {
   title        String
   summary      String
   content      String       // Detailed Markdown / HTML text rules
+  videoUrl     String?      // YouTube, Vimeo, Drive, Loom or MP4 URL
   categoryId   String
   category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   attachments  Attachment[]

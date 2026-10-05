@@ -5,7 +5,8 @@ import { getOrSeedCategories } from '@/lib/categories';
 import { notFound } from 'next/navigation';
 import { FolderOpen, Layers } from 'lucide-react';
 
-export const revalidate = 0;
+// Cache inteligente ISR de 30s para respostas ultrarrápidas
+export const revalidate = 30;
 
 export default async function CategoryPage({
   params,

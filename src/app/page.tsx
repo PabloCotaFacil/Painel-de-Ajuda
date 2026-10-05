@@ -5,7 +5,8 @@ import { getOrSeedCategories } from '@/lib/categories';
 import Link from 'next/link';
 import { Sparkles, ArrowRight, ShieldCheck, FileText } from 'lucide-react';
 
-export const revalidate = 0;
+// Cache inteligente ISR de 30s para respostas ultrarrápidas ao clicar nos botões
+export const revalidate = 30;
 
 export default async function HomePage({
   searchParams,

@@ -16,6 +16,7 @@ import {
   Layout,
   Lock,
   KeyRound,
+  Video,
 } from 'lucide-react';
 
 interface Attachment {
@@ -35,6 +36,7 @@ interface Article {
   title: string;
   summary: string;
   content: string;
+  videoUrl?: string | null;
   categoryId: string;
   category: Category;
   attachments: Attachment[];
@@ -57,6 +59,7 @@ export default function AdminMateriaisClient({
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id || '');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
@@ -190,6 +193,7 @@ export default function AdminMateriaisClient({
     setTitle('');
     setSummary('');
     setContent('');
+    setVideoUrl('');
     setCategoryId(categories[0]?.id || '');
     setAttachments([]);
     setMessage(null);
@@ -200,6 +204,7 @@ export default function AdminMateriaisClient({
     setTitle(art.title);
     setSummary(art.summary);
     setContent(art.content);
+    setVideoUrl(art.videoUrl || '');
     setCategoryId(art.categoryId);
     setAttachments(art.attachments.map((a) => ({ name: a.name, fileUrl: a.fileUrl })));
     window.scrollTo({ top: 500, behavior: 'smooth' });
@@ -248,7 +253,14 @@ export default function AdminMateriaisClient({
       return;
     }
 
-    const payload = { title, summary, content, categoryId: targetCategoryId, attachments };
+    const payload = {
+      title,
+      summary,
+      content,
+      videoUrl: videoUrl.trim() || null,
+      categoryId: targetCategoryId,
+      attachments,
+    };
 
     try {
       const url = editingArticleId ? `/api/articles/${editingArticleId}` : '/api/articles';
@@ -308,7 +320,7 @@ export default function AdminMateriaisClient({
             <Shield className="w-5 h-5 text-cyan-400" />
             <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">Painel Administrativo Privado</span>
           </div>
-          <h1 className="text-2xl font-black mt-1">Gestão de Materiais, Banner & PDFs</h1>
+          <h1 className="text-2xl font-black mt-1">Gestão de Materiais, Banner & Treinamentos</h1>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -427,7 +439,7 @@ export default function AdminMateriaisClient({
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
             <Plus className="w-5 h-5 text-blue-700" />
-            {editingArticleId ? 'Editar Material / Regra' : 'Publicar Novo Material / Anexar PDF'}
+            {editingArticleId ? 'Editar Material / Regra' : 'Publicar Novo Material / Treinamento'}
           </h2>
           {editingArticleId && (
             <button onClick={resetForm} className="text-xs font-bold text-slate-500 hover:underline">
@@ -442,7 +454,7 @@ export default function AdminMateriaisClient({
               <label className="text-xs font-extrabold text-slate-700 block mb-1">TÍTULO DO MATERIAL</label>
               <input
                 type="text"
-                placeholder="ex: Regras de Financiamento Habitação Caixa 2026 - LTV & Regras"
+                placeholder="ex: Treinamento Financiamento Habitacional Caixa 2026 - Esteira & Checklist"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -475,11 +487,29 @@ export default function AdminMateriaisClient({
             <label className="text-xs font-extrabold text-slate-700 block mb-1">RESUMO CURTO (Aparece na Home do site)</label>
             <textarea
               rows={2}
-              placeholder="Descreva brevemente as principais mudanças ou regras contidas neste material..."
+              placeholder="Descreva brevemente as principais orientações, regras ou objetivos deste treinamento..."
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
+            />
+          </div>
+
+          {/* VIDEO TRAINING INPUT */}
+          <div className="bg-rose-50/60 p-4 sm:p-5 rounded-2xl border border-rose-200/80 space-y-2">
+            <label className="text-xs font-black text-rose-950 flex items-center gap-1.5 uppercase tracking-wide">
+              <Video className="w-4 h-4 text-rose-600" />
+              Vídeo de Treinamento (Opcional — YouTube, Vimeo, Google Drive, Loom ou link direto MP4)
+            </label>
+            <p className="text-xs text-slate-600">
+              Cole o link do vídeo para que os consultores possam assistir à aula ou explicação diretamente na página do material.
+            </p>
+            <input
+              type="url"
+              placeholder="ex: https://www.youtube.com/watch?v=... ou https://youtu.be/... ou https://vimeo.com/... ou Google Drive"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-rose-200 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
             />
           </div>
 
@@ -635,6 +665,11 @@ export default function AdminMateriaisClient({
                     <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
                       {art.category?.name || 'Geral'}
                     </span>
+                    {art.videoUrl && (
+                      <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        ▶ Vídeo Aula
+                      </span>
+                    )}
                     {art.attachments.length > 0 && (
                       <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
                         {art.attachments.length} anexo(s)

@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, FileText, Download, Calendar, Info, Share2 } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Calendar, Video } from 'lucide-react';
+import VideoPlayer from '@/components/VideoPlayer';
 
-export const revalidate = 0;
+// Cache inteligente de 60 segundos com ISR para respostas ultrarrápidas
+export const revalidate = 60;
 
 export default async function ArticleDetailPage({
   params,
@@ -42,9 +44,17 @@ export default async function ArticleDetailPage({
       {/* Main Article Header Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 card-shadow space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
-          <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-blue-100 text-blue-800 uppercase">
-            {article.category.name}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-blue-100 text-blue-800 uppercase">
+              {article.category.name}
+            </span>
+            {article.videoUrl && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                <Video className="w-3.5 h-3.5" />
+                <span>Vídeo Aula / Treinamento</span>
+              </span>
+            )}
+          </div>
           <div className="flex items-center text-xs text-slate-400 gap-1.5">
             <Calendar className="w-4 h-4 text-cyan-500" />
             <span>Atualizado em {formattedDate}</span>
@@ -60,6 +70,11 @@ export default async function ArticleDetailPage({
             {article.summary}
           </p>
         </div>
+
+        {/* Video Player Section if article has video */}
+        {article.videoUrl && (
+          <VideoPlayer url={article.videoUrl} title={article.title} />
+        )}
 
         {/* Downloadable PDF attachments section */}
         {article.attachments.length > 0 && (

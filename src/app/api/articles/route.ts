@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, summary, content, categoryId, attachments } = body;
+    const { title, summary, content, categoryId, attachments, videoUrl } = body;
 
     if (!title || !summary || !content || !categoryId) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios' }, { status: 400 });
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
         title,
         summary,
         content,
+        videoUrl: videoUrl ? videoUrl.trim() : null,
         categoryId,
         attachments: {
           create: attachments?.map((att: { name: string; fileUrl: string }) => ({
@@ -32,6 +34,9 @@ export async function POST(request: Request) {
       },
       include: { attachments: true },
     });
+
+    revalidatePath('/');
+    revalidatePath('/categorias/[slug]', 'page');
 
     return NextResponse.json(article);
   } catch (error) {

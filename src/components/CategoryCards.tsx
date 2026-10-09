@@ -5,63 +5,51 @@ import { Home, Building2, Sprout, BookOpen, Layers } from 'lucide-react';
 
 interface CategoryCardsProps {
   activeSlug?: string;
+  floating?: boolean;
 }
 
-export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
+export default function CategoryCards({ activeSlug, floating = false }: CategoryCardsProps) {
   const categories = [
     {
       name: 'TODAS AS CATEGORIAS',
       slug: 'all',
-      description: 'Acesse todas as categorias e manuais disponíveis.',
+      description: 'Acesse todas as esteiras, produtos e manuais disponíveis.',
       icon: Layers,
-      color: 'bg-slate-900 text-white',
-      accent: 'border-cyan-500',
+      isDark: true,
     },
     {
       name: 'CRÉDITO IMOBILIÁRIO',
       slug: 'imobiliario',
-      description: 'Financiamento habitacional, LTV Caixa/Itaú/BB e Home Equity.',
+      description: 'Financiamento habitacional, Home Equity e repasse Caixa/Itaú/BB.',
       icon: Home,
-      color: 'bg-white text-slate-800',
-      accent: 'border-blue-600',
+      isDark: false,
     },
     {
       name: 'CRÉDITO PJ & GIRO',
       slug: 'credito-pj',
-      description: 'Capital de Giro, FGO, Pronampe e Antecipação.',
+      description: 'Capital de Giro, Pronampe, FGO e Antecipação de Recebíveis.',
       icon: Building2,
-      color: 'bg-white text-slate-800',
-      accent: 'border-emerald-600',
+      isDark: false,
     },
     {
       name: 'CRÉDITO AGRO',
       slug: 'credito-agro',
-      description: 'Custeio, Investimento, CPR, Moderfrota e Pronaf.',
+      description: 'Custeio agrícola/pecuário, CPR, Investimento, Moderfrota e Pronaf.',
       icon: Sprout,
-      color: 'bg-white text-slate-800',
-      accent: 'border-green-600',
+      isDark: false,
     },
     {
       name: 'REGRAS & TREINAMENTOS',
       slug: 'treinamentos',
-      description: 'Vídeos de treinamento, resumos de esteira e manuais.',
+      description: 'Vídeos de treinamento, esteiras operacionais e manuais.',
       icon: BookOpen,
-      color: 'bg-white text-slate-800',
-      accent: 'border-purple-600',
+      isDark: false,
     },
   ];
 
   return (
-    <section className="py-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <span className="w-2.5 h-6 bg-blue-600 rounded-full inline-block"></span>
-          Categorias em Destaque
-        </h2>
-        <span className="text-xs font-medium text-slate-500">Selecione para filtrar os materiais</span>
-      </div>
-
-      {/* Grid of Public Categories */}
+    <section className={floating ? '-mt-10 sm:-mt-14 relative z-20 mb-8' : 'py-4'}>
+      {/* Grid of Bevi-Ajuda Style Category Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {categories.map((cat) => {
           const Icon = cat.icon;
@@ -72,30 +60,57 @@ export default function CategoryCards({ activeSlug }: CategoryCardsProps) {
             <Link
               key={cat.slug}
               href={targetUrl}
-              className={`p-5 rounded-2xl border-2 transition-all duration-200 flex flex-col justify-between min-h-[185px] card-shadow hover:-translate-y-1 ${
-                cat.color
-              } ${isSelected ? 'ring-4 ring-cyan-400/50 border-cyan-500 scale-[1.02]' : 'border-slate-200/80 hover:border-blue-400'}`}
+              className={`p-6 rounded-3xl transition-all duration-300 flex flex-col justify-between min-h-[200px] hover:-translate-y-1.5 ${
+                cat.isDark
+                  ? 'bg-slate-900 text-white shadow-xl hover:shadow-2xl hover:bg-slate-950 border border-slate-800'
+                  : 'bg-white text-slate-800 border border-slate-100 card-float hover:border-blue-300 hover:shadow-xl'
+              } ${
+                isSelected
+                  ? 'ring-4 ring-cyan-400/60 scale-[1.02]'
+                  : ''
+              }`}
             >
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className={`p-2 rounded-xl shrink-0 ${cat.slug === 'all' ? 'bg-white/20' : 'bg-slate-100 text-blue-700'}`}>
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                      cat.isDark ? 'bg-white/10 text-cyan-300' : 'bg-blue-50 text-blue-600'
+                    }`}
+                  >
                     <Icon className="w-5 h-5" />
                   </div>
                   {isSelected && (
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-400 text-slate-950 uppercase shrink-0">
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-cyan-400 text-slate-950 uppercase tracking-wide shrink-0">
                       Ativo
                     </span>
                   )}
                 </div>
+
                 <div>
-                  <h3 className="font-extrabold text-xs sm:text-sm tracking-tight leading-snug">{cat.name}</h3>
-                  <p className="text-xs opacity-80 mt-1 line-clamp-2 leading-relaxed">{cat.description}</p>
+                  <h3
+                    className={`font-black text-xs sm:text-sm tracking-tight leading-snug uppercase ${
+                      cat.isDark ? 'text-white' : 'text-slate-900'
+                    }`}
+                  >
+                    {cat.name}
+                  </h3>
+                  <p
+                    className={`text-xs mt-1.5 line-clamp-2 leading-relaxed ${
+                      cat.isDark ? 'text-slate-300' : 'text-slate-500'
+                    }`}
+                  >
+                    {cat.description}
+                  </p>
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center text-xs font-bold gap-1 opacity-90 border-t border-current/10">
-                <span>Acessar</span>
-                <span>→</span>
+              <div
+                className={`pt-3.5 flex items-center text-xs font-bold gap-1 transition ${
+                  cat.isDark ? 'text-cyan-300 hover:text-cyan-200' : 'text-blue-600 hover:text-blue-800'
+                }`}
+              >
+                <span>Saiba mais</span>
+                <span className="text-sm">→</span>
               </div>
             </Link>
           );

@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
+import { checkIsAdmin } from '@/lib/auth';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, FileText, Download, Calendar, Video } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Calendar, Video, Edit2 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 
 // Cache inteligente de 60 segundos com ISR para respostas ultrarrápidas
@@ -12,6 +13,8 @@ export default async function ArticleDetailPage({
 }: {
   params: { id: string };
 }) {
+  const isAdmin = await checkIsAdmin();
+
   const article = await prisma.article.findUnique({
     where: { id: params.id },
     include: {
@@ -32,14 +35,26 @@ export default async function ArticleDetailPage({
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Top Back Navigation */}
-      <Link
-        href={`/categorias/${article.category.slug}`}
-        className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 hover:text-blue-700 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm transition"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Voltar para {article.category.name}</span>
-      </Link>
+      {/* Top Navigation & Admin Edit Button */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={`/categorias/${article.category.slug}`}
+          className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 hover:text-blue-700 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm transition"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Voltar para {article.category.name}</span>
+        </Link>
+
+        {isAdmin && (
+          <Link
+            href={`/admin/materiais?edit=${article.id}`}
+            className="inline-flex items-center space-x-1.5 text-xs font-bold bg-amber-400 hover:bg-amber-500 text-slate-950 px-4 py-2 rounded-xl transition shadow-sm"
+          >
+            <Edit2 className="w-4 h-4" />
+            <span>Editar este Material</span>
+          </Link>
+        )}
+      </div>
 
       {/* Main Article Header Card */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 card-shadow space-y-6">
@@ -106,9 +121,16 @@ export default async function ArticleDetailPage({
         )}
 
         {/* Formatted Content Body */}
-        <div className="prose prose-slate max-w-none text-slate-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-4 border-t border-slate-100">
-          {article.content}
-        </div>
+        {article.content.includes('<') && article.content.includes('>') ? (
+          <div
+            className="prose prose-slate max-w-none text-slate-800 text-sm sm:text-base leading-relaxed pt-4 border-t border-slate-100 article-body"
+            dangerouslySetInnerHTML={{ __html: article.content }}
+          />
+        ) : (
+          <div className="prose prose-slate max-w-none text-slate-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-4 border-t border-slate-100 article-body">
+            {article.content}
+          </div>
+        )}
       </div>
     </div>
   );

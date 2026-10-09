@@ -25,6 +25,34 @@ export async function checkIsAdmin() {
   }
 }
 
+export async function getAdminUsername(): Promise<string> {
+  try {
+    const config = await prisma.systemConfig.findUnique({
+      where: { key: 'admin_username' },
+    });
+    if (config?.value) {
+      return config.value.trim();
+    }
+  } catch (error) {
+    console.error('Erro ao buscar usuário no banco:', error);
+  }
+  return (process.env.ADMIN_USERNAME || 'admin').trim();
+}
+
+export async function setAdminUsername(newUsername: string): Promise<boolean> {
+  try {
+    await prisma.systemConfig.upsert({
+      where: { key: 'admin_username' },
+      update: { value: newUsername.trim() },
+      create: { key: 'admin_username', value: newUsername.trim() },
+    });
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar novo usuário:', error);
+    return false;
+  }
+}
+
 export async function getAdminPassword(): Promise<string> {
   try {
     const config = await prisma.systemConfig.findUnique({

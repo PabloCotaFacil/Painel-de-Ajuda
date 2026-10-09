@@ -1,15 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminPassword } from '@/lib/auth';
+import { getAdminUsername, getAdminPassword } from '@/lib/auth';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
   try {
-    const { password } = await request.json();
+    const { username, password } = await request.json();
+    const adminUsername = await getAdminUsername();
     const adminPassword = await getAdminPassword();
 
-    if (password !== adminPassword) {
-      return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
+    // Validação de Usuário
+    if (!username || username.trim().toLowerCase() !== adminUsername.toLowerCase()) {
+      return NextResponse.json({ error: 'Usuário ou senha incorretos' }, { status: 401 });
+    }
+
+    // Validação de Senha
+    if (!password || password !== adminPassword) {
+      return NextResponse.json({ error: 'Usuário ou senha incorretos' }, { status: 401 });
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -30,6 +37,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    console.error('Erro no login:', error);
     return NextResponse.json({ error: 'Erro no servidor' }, { status: 500 });
   }
 }

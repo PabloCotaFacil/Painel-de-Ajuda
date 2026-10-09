@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Lock, ArrowRight } from 'lucide-react';
+import { Shield, Lock, User, ArrowRight } from 'lucide-react';
 
 export default function AdminLoginPage() {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,12 +20,12 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Senha incorreta');
+        setError(data.error || 'Usuário ou senha incorretos');
         setLoading(false);
       } else {
         router.push('/admin/materiais');
@@ -37,34 +38,50 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto py-12">
-      <div className="bg-white rounded-3xl p-8 border border-slate-200 card-shadow space-y-6">
+    <div className="max-w-md mx-auto py-12 px-4">
+      <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 card-shadow space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-blue-100 text-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <Shield className="w-6 h-6" />
+          <div className="w-14 h-14 bg-blue-50 text-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
+            <Shield className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900">Área Administrativa</h1>
+          <h1 className="text-2xl font-black text-slate-900">Acesso Administrativo</h1>
           <p className="text-xs text-slate-500">
-            Digite sua senha para acessar o painel privado de gestão de PDFs e regras.
+            Digite seu login e senha para gerenciar materiais, treinamentos e regras.
           </p>
         </div>
 
         {error && (
-          <div className="bg-rose-50 text-rose-800 text-xs font-bold p-3 rounded-xl border border-rose-200 text-center">
+          <div className="bg-rose-50 text-rose-800 text-xs font-bold p-3.5 rounded-xl border border-rose-200 text-center">
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="text-xs font-extrabold text-slate-700 block mb-1">SENHA DE ADMINISTRADOR</label>
+            <label className="text-xs font-extrabold text-slate-700 block mb-1">USUÁRIO / LOGIN</label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="ex: admin"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+                autoFocus
+              />
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-extrabold text-slate-700 block mb-1">SENHA</label>
             <div className="relative">
               <input
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 required
               />
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -74,9 +91,9 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl transition shadow-md text-sm flex items-center justify-center space-x-2"
+            className="w-full py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl transition shadow-md text-sm flex items-center justify-center space-x-2 mt-2"
           >
-            <span>{loading ? 'Entrando...' : 'Entrar no Painel'}</span>
+            <span>{loading ? 'Validando acesso...' : 'Entrar no Painel'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>

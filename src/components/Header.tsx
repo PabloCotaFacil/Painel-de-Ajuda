@@ -13,7 +13,13 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (search.trim()) {
-      router.push(`/?q=${encodeURIComponent(search.trim())}`);
+      router.push(`/?q=${encodeURIComponent(search.trim())}#materiais-section`);
+      setTimeout(() => {
+        const target = document.getElementById('materiais-section');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } else {
       router.push('/');
     }

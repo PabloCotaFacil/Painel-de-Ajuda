@@ -1,6 +1,7 @@
 import CategoryCards from '@/components/CategoryCards';
 import ArticleCard from '@/components/ArticleCard';
 import HeroMedia from '@/components/HeroMedia';
+import SearchResultsAnchor from '@/components/SearchResultsAnchor';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
 import Link from 'next/link';
@@ -126,8 +127,8 @@ export default async function HomePage({
 
         {/* HERO CONTENT */}
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          {/* Coluna Esquerda: Textos e Busca Central */}
-          <div className="lg:col-span-7 space-y-2.5">
+          {/* Coluna Esquerda: Textos de Boas-Vindas & Chamada */}
+          <div className="lg:col-span-7 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-cyan-200 text-xs sm:text-sm font-bold tracking-wide">
                 Olá! Bem-vindo ao Hub de Apoio CotaFácil.
@@ -145,48 +146,11 @@ export default async function HomePage({
                 {heroBanner.title || 'Como podemos te ajudar?'}
               </h1>
               {heroBanner.subtitle && (
-                <p className="text-blue-100 text-xs sm:text-xs mt-1 max-w-lg leading-relaxed line-clamp-2">
+                <p className="text-blue-100 text-xs sm:text-sm mt-1.5 max-w-xl leading-relaxed">
                   {heroBanner.subtitle}
                 </p>
               )}
             </div>
-
-            {/* BARRA DE PESQUISA INTEGRADA NO HERO COMPACTA */}
-            <form action="/" method="GET" className="pt-1 max-w-xl">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  name="q"
-                  defaultValue={query}
-                  placeholder="Buscar regras, taxas, LTV, Pronampe, CPR, manuais..."
-                  className="w-full pl-4 sm:pl-5 pr-24 sm:pr-28 py-2.5 sm:py-3.5 bg-white text-slate-900 placeholder-slate-400 text-xs sm:text-sm font-semibold rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-300/60"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-extrabold text-xs sm:text-sm rounded-lg transition shadow flex items-center space-x-1.5"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Buscar</span>
-                </button>
-              </div>
-
-              {/* Tags de busca frequente */}
-              <div className="flex items-center space-x-1.5 text-[11px] text-cyan-100/90 mt-2 overflow-x-auto scrollbar-none pb-0.5">
-                <span className="font-bold shrink-0 text-[10px] uppercase tracking-wider text-cyan-200">Mais buscados:</span>
-                <Link href="/?q=Habita%C3%A7%C3%A3o" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
-                  Habitação Caixa
-                </Link>
-                <Link href="/?q=Pronampe" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
-                  Pronampe PJ
-                </Link>
-                <Link href="/?q=CPR" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
-                  CPR Agro
-                </Link>
-                <Link href="/?q=Home%20Equity" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
-                  Home Equity
-                </Link>
-              </div>
-            </form>
           </div>
 
           {/* Coluna Direita: Cards Clicáveis Moldáveis ou Player de Vídeo */}
@@ -201,20 +165,52 @@ export default async function HomePage({
         </div>
       </div>
 
+      {/* ROLAGEM AUTOMÁTICA VISUAL PARA A BUSCA */}
+      <SearchResultsAnchor query={query} />
+
       {/* ============================================================ */}
       {/* CARDS DE CATEGORIAS FLUTUANTES (IDÊNTICO AO BEVI AJUDA)        */}
       {/* ============================================================ */}
       <CategoryCards floating={true} />
 
       {/* ============================================================ */}
-      {/* SEÇÃO "ÚLTIMAS ATUALIZAÇÕES" ESTILO BEVI AJUDA (2 COLUNAS)     */}
+      {/* SEÇÃO "ÚLTIMAS ATUALIZAÇÕES" / RESULTADOS DA PESQUISA         */}
       {/* ============================================================ */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 card-shadow space-y-6">
+      <section id="materiais-section" className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 card-shadow space-y-6 scroll-mt-28">
+        {/* BANNER VISUAL DE FEEDBACK DA BUSCA */}
+        {query && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow">
+                <Search className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900">
+                  Resultados da pesquisa por: <span className="text-blue-600 font-black">"{query}"</span>
+                </h3>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {articles.length === 0
+                    ? 'Nenhum material correspondente encontrado.'
+                    : articles.length === 1
+                    ? '1 material encontrado abaixo:'
+                    : `${articles.length} materiais encontrados correspondentes:`}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/"
+              className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 shadow-sm transition whitespace-nowrap self-start sm:self-auto"
+            >
+              ✕ Limpar busca
+            </Link>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
           <div>
             <h2 className="text-2xl font-black text-blue-900 flex items-center gap-2 tracking-tight">
               <span className="w-2.5 h-6 bg-cyan-500 rounded-full inline-block"></span>
-              {query ? `Resultados para "${query}"` : 'Últimas atualizações'}
+              {query ? `Materiais encontrados para "${query}"` : 'Últimas atualizações'}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               {query

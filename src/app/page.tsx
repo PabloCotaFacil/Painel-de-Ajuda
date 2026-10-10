@@ -1,5 +1,6 @@
 import CategoryCards from '@/components/CategoryCards';
 import ArticleCard from '@/components/ArticleCard';
+import HeroMedia from '@/components/HeroMedia';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
 import Link from 'next/link';
@@ -44,6 +45,10 @@ export default async function HomePage({
       primaryButtonUrl: '/categorias/treinamentos',
       secondaryButtonText: null,
       secondaryButtonUrl: null,
+      mediaType: 'cards',
+      videoUrl: null,
+      videoTitle: null,
+      cardsJson: '[]',
       updatedAt: new Date(),
     };
   }
@@ -135,7 +140,7 @@ export default async function HomePage({
                 Olá! Bem-vindo ao Hub de Apoio CotaFácil.
               </p>
               <h1 className="text-3xl sm:text-5xl font-black leading-tight tracking-tight mt-1 text-white">
-                Como podemos te ajudar?
+                {heroBanner.title || 'Como podemos te ajudar?'}
               </h1>
               {heroBanner.subtitle && (
                 <p className="text-blue-100 text-xs sm:text-sm mt-2 max-w-xl leading-relaxed">
@@ -182,37 +187,14 @@ export default async function HomePage({
             </form>
           </div>
 
-          {/* Coluna Direita: Cards Flutuantes de Destaque da Franquia */}
-          <div className="lg:col-span-4 hidden lg:flex flex-col gap-3 justify-center">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-lg flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/30 flex items-center justify-center text-cyan-300 shrink-0">
-                <Home className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-white">Crédito Imobiliário</h4>
-                <p className="text-[11px] text-blue-100">LTV, esteiras Caixa, Itaú, BB e Santander</p>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-lg flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/30 flex items-center justify-center text-emerald-300 shrink-0">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-white">Crédito PJ & Capital de Giro</h4>
-                <p className="text-[11px] text-blue-100">Pronampe, FGO e Antecipação de Recebíveis</p>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-lg flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/30 flex items-center justify-center text-cyan-300 shrink-0">
-                <Sprout className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-white">Crédito Agro & CPR</h4>
-                <p className="text-[11px] text-blue-100">Custeio, Investimento e Financiamento Rural</p>
-              </div>
-            </div>
+          {/* Coluna Direita: Cards Clicáveis Moldáveis ou Player de Vídeo */}
+          <div className="lg:col-span-5 flex flex-col justify-center">
+            <HeroMedia
+              mediaType={heroBanner.mediaType}
+              videoUrl={heroBanner.videoUrl}
+              videoTitle={heroBanner.videoTitle}
+              cardsJson={heroBanner.cardsJson}
+            />
           </div>
         </div>
       </div>

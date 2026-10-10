@@ -64,12 +64,16 @@ model TriggerTier {
 model HeroBanner {
   id                   String   @id @default("default-hero")
   badgeText            String   @default("Regras & Manuais Safra 2025/2026")
-  title                String   @default("Hub de apoio Imobiliário, Crédito PJ & Agro")
+  title                String   @default("Como podemos te ajudar?")
   subtitle             String   @default("Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.")
   primaryButtonText    String   @default("Ver Regras & Manuais")
   primaryButtonUrl     String   @default("/categorias/treinamentos")
   secondaryButtonText  String?  @default("")
   secondaryButtonUrl   String?  @default("")
+  mediaType            String   @default("cards") // "cards" | "video"
+  videoUrl             String?  @default("")
+  videoTitle           String?  @default("")
+  cardsJson            String?  @default("[]")
   updatedAt            DateTime @updatedAt
 }
 

@@ -2,6 +2,33 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 
+const defaultCards = JSON.stringify([
+  {
+    id: '1',
+    title: 'Crédito Imobiliário',
+    subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
+    url: '/categorias/credito-imobiliario',
+    icon: 'home',
+    color: 'blue',
+  },
+  {
+    id: '2',
+    title: 'Crédito PJ & Capital de Giro',
+    subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
+    url: '/categorias/credito-pj',
+    icon: 'building',
+    color: 'emerald',
+  },
+  {
+    id: '3',
+    title: 'Crédito Agro & CPR',
+    subtitle: 'Custeio, Investimento e Financiamento Rural',
+    url: '/categorias/credito-agro',
+    icon: 'sprout',
+    color: 'cyan',
+  },
+]);
+
 export async function GET() {
   try {
     let banner = await prisma.heroBanner.findUnique({
@@ -13,14 +40,25 @@ export async function GET() {
         data: {
           id: 'default-hero',
           badgeText: 'Regras & Manuais Safra 2025/2026',
-          title: 'Hub de apoio Imobiliário, Crédito PJ & Agro',
+          title: 'Como podemos te ajudar?',
           subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
           primaryButtonText: 'Ver Regras & Manuais',
           primaryButtonUrl: '/categorias/treinamentos',
-          secondaryButtonText: 'Área do Gestor',
-          secondaryButtonUrl: '/admin/login',
+          secondaryButtonText: '',
+          secondaryButtonUrl: '',
+          mediaType: 'cards',
+          videoUrl: '',
+          videoTitle: '',
+          cardsJson: defaultCards,
         },
       });
+    }
+
+    if (!banner.cardsJson || banner.cardsJson === '[]') {
+      banner = {
+        ...banner,
+        cardsJson: defaultCards,
+      };
     }
 
     return NextResponse.json(banner);
@@ -45,7 +83,16 @@ export async function PUT(request: Request) {
       primaryButtonUrl,
       secondaryButtonText,
       secondaryButtonUrl,
+      mediaType,
+      videoUrl,
+      videoTitle,
+      cardsJson,
     } = body;
+
+    const formattedCardsJson =
+      typeof cardsJson === 'string'
+        ? cardsJson
+        : JSON.stringify(cardsJson || []);
 
     const banner = await prisma.heroBanner.upsert({
       where: { id: 'default-hero' },
@@ -57,6 +104,10 @@ export async function PUT(request: Request) {
         primaryButtonUrl,
         secondaryButtonText,
         secondaryButtonUrl,
+        mediaType: mediaType || 'cards',
+        videoUrl: videoUrl || '',
+        videoTitle: videoTitle || '',
+        cardsJson: formattedCardsJson,
       },
       create: {
         id: 'default-hero',
@@ -67,6 +118,10 @@ export async function PUT(request: Request) {
         primaryButtonUrl,
         secondaryButtonText,
         secondaryButtonUrl,
+        mediaType: mediaType || 'cards',
+        videoUrl: videoUrl || '',
+        videoTitle: videoTitle || '',
+        cardsJson: formattedCardsJson,
       },
     });
 

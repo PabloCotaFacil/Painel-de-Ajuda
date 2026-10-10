@@ -24,6 +24,12 @@ import {
   BookOpen,
   FolderOpen,
   ArrowRight,
+  Home,
+  Building2,
+  Sprout,
+  DollarSign,
+  Play,
+  RefreshCw,
 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -83,13 +89,102 @@ export default function AdminMateriaisClient({
 
   // Form State for Editable Hero Banner
   const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais Safra 2025/2026');
-  const [bannerTitle, setBannerTitle] = useState('Hub de apoio Imobiliário, Crédito PJ & Agro');
+  const [bannerTitle, setBannerTitle] = useState('Como podemos te ajudar?');
   const [bannerSubtitle, setBannerSubtitle] = useState(
     'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.'
   );
   const [bannerPrimaryBtnText, setBannerPrimaryBtnText] = useState('Ver Regras & Manuais');
   const [bannerPrimaryBtnUrl, setBannerPrimaryBtnUrl] = useState('/categorias/treinamentos');
+  const [bannerMediaType, setBannerMediaType] = useState<'cards' | 'video'>('cards');
+  const [bannerVideoUrl, setBannerVideoUrl] = useState('');
+  const [bannerVideoTitle, setBannerVideoTitle] = useState('');
+  const [bannerCards, setBannerCards] = useState<Array<{
+    id: string;
+    title: string;
+    subtitle: string;
+    url: string;
+    icon: string;
+    color: string;
+  }>>([
+    {
+      id: '1',
+      title: 'Crédito Imobiliário',
+      subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
+      url: '/categorias/credito-imobiliario',
+      icon: 'home',
+      color: 'blue',
+    },
+    {
+      id: '2',
+      title: 'Crédito PJ & Capital de Giro',
+      subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
+      url: '/categorias/credito-pj',
+      icon: 'building',
+      color: 'emerald',
+    },
+    {
+      id: '3',
+      title: 'Crédito Agro & CPR',
+      subtitle: 'Custeio, Investimento e Financiamento Rural',
+      url: '/categorias/credito-agro',
+      icon: 'sprout',
+      color: 'cyan',
+    },
+  ]);
   const [savingBanner, setSavingBanner] = useState(false);
+
+  const handleAddBannerCard = () => {
+    setBannerCards((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: 'Novo Atalho',
+        subtitle: 'Descrição ou esteira operacional',
+        url: '/categorias/treinamentos',
+        icon: 'file',
+        color: 'blue',
+      },
+    ]);
+  };
+
+  const handleUpdateBannerCard = (id: string, field: string, value: string) => {
+    setBannerCards((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
+    );
+  };
+
+  const handleRemoveBannerCard = (id: string) => {
+    setBannerCards((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleResetBannerCards = () => {
+    setBannerCards([
+      {
+        id: '1',
+        title: 'Crédito Imobiliário',
+        subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
+        url: '/categorias/credito-imobiliario',
+        icon: 'home',
+        color: 'blue',
+      },
+      {
+        id: '2',
+        title: 'Crédito PJ & Capital de Giro',
+        subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
+        url: '/categorias/credito-pj',
+        icon: 'building',
+        color: 'emerald',
+      },
+      {
+        id: '3',
+        title: 'Crédito Agro & CPR',
+        subtitle: 'Custeio, Investimento e Financiamento Rural',
+        url: '/categorias/credito-agro',
+        icon: 'sprout',
+        color: 'cyan',
+      },
+    ]);
+  };
 
   // Credentials (User & Password) State
   const [currentUsername, setCurrentUsername] = useState('admin');
@@ -161,6 +256,17 @@ export default function AdminMateriaisClient({
           setBannerSubtitle(data.subtitle || '');
           setBannerPrimaryBtnText(data.primaryButtonText || '');
           setBannerPrimaryBtnUrl(data.primaryButtonUrl || '/categorias/treinamentos');
+          setBannerMediaType(data.mediaType || 'cards');
+          setBannerVideoUrl(data.videoUrl || '');
+          setBannerVideoTitle(data.videoTitle || '');
+          if (data.cardsJson) {
+            try {
+              const parsed = JSON.parse(data.cardsJson);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setBannerCards(parsed);
+              }
+            } catch {}
+          }
         }
       })
       .catch(() => {});
@@ -181,6 +287,10 @@ export default function AdminMateriaisClient({
           subtitle: bannerSubtitle,
           primaryButtonText: bannerPrimaryBtnText,
           primaryButtonUrl: bannerPrimaryBtnUrl,
+          mediaType: bannerMediaType,
+          videoUrl: bannerVideoUrl,
+          videoTitle: bannerVideoTitle,
+          cardsJson: JSON.stringify(bannerCards),
         }),
       });
 
@@ -883,84 +993,331 @@ export default function AdminMateriaisClient({
         </div>
       )}
 
-      {/* TAB 3: BANNER DA HOME */}
+      {/* TAB 3: MOLDAR BANNER DA HOME */}
       {activeTab === 'banner' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <Layout className="w-5 h-5 text-cyan-600" />
-              Editar Banner Principal da Home (Avisos Sazonais & Campanhas)
-            </h2>
-            <span className="text-xs text-slate-400 font-medium">Altere o texto do topo a qualquer momento</span>
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <Layout className="w-5 h-5 text-blue-700" />
+                Personalizar & Moldar Banner da Home
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Ajuste os textos de boas-vindas, adicione atalhos/cards clicáveis para links externos e materiais, ou insira um reprodutor de vídeo do YouTube em destaque.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveBanner}
+              disabled={savingBanner}
+              className="px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center space-x-2 shrink-0 self-start sm:self-auto"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-300" />
+              <span>{savingBanner ? 'Salvando...' : 'Salvar Alterações'}</span>
+            </button>
           </div>
 
-          <form onSubmit={handleSaveBanner} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-xs font-extrabold text-slate-700 block mb-1">SELINHO / BADGE DO TOPO</label>
-                <input
-                  type="text"
-                  placeholder="ex: Regras & Manuais Safra 2025/2026 ou Campanha do Mês"
-                  value={bannerBadgeText}
-                  onChange={(e) => setBannerBadgeText(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                />
+          <form onSubmit={handleSaveBanner} className="space-y-6">
+            {/* BLOCO 1: TEXTOS DO BANNER */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-cyan-600" />
+                1. Textos Principais do Banner
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                    SELINHO / BADGE DO TOPO
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: Regras & Manuais Safra 2025/2026"
+                    value={bannerBadgeText}
+                    onChange={(e) => setBannerBadgeText(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                    TÍTULO DA CHAMADA
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: Como podemos te ajudar?"
+                    value={bannerTitle}
+                    onChange={(e) => setBannerTitle(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="md:col-span-2">
-                <label className="text-xs font-extrabold text-slate-700 block mb-1">TÍTULO PRINCIPAL</label>
-                <input
-                  type="text"
-                  placeholder="ex: Hub de apoio Imobiliário, Crédito PJ & Agro"
-                  value={bannerTitle}
-                  onChange={(e) => setBannerTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+              <div>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  SUBTÍTULO / MENSAGEM
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Descreva detalhes, orientações ou regras vigentes..."
+                  value={bannerSubtitle}
+                  onChange={(e) => setBannerSubtitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-extrabold text-slate-700 block mb-1">SUBTÍTULO / MENSAGEM DO AVISO</label>
-              <textarea
-                rows={2}
-                placeholder="Descreva detalhes, orientações ou regras vigentes..."
-                value={bannerSubtitle}
-                onChange={(e) => setBannerSubtitle(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                required
-              />
+            {/* BLOCO 2: FORMATO DA LATERAL DIREITA DO BANNER */}
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                    2. Conteúdo da Lateral Direita do Banner
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Escolha se deseja exibir atalhos/cards clicáveis ou um reprodutor de vídeo integrado no banner.
+                  </p>
+                </div>
+
+                <div className="inline-flex p-1 bg-white border border-slate-200 rounded-xl shadow-sm shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setBannerMediaType('cards')}
+                    className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center space-x-1.5 ${
+                      bannerMediaType === 'cards'
+                        ? 'bg-blue-700 text-white shadow'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Cards Clicáveis</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerMediaType('video')}
+                    className={`px-4 py-2 rounded-lg text-xs font-black transition flex items-center space-x-1.5 ${
+                      bannerMediaType === 'video'
+                        ? 'bg-blue-700 text-white shadow'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Vídeo Integrado</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* OPÇÃO 1: CARDS CLICÁVEIS */}
+              {bannerMediaType === 'cards' && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">
+                      Cards ativos no banner ({bannerCards.length}):
+                    </span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleResetBannerCards}
+                        className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center space-x-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200 transition"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Restaurar Padrão</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddBannerCard}
+                        className="text-xs font-black text-blue-700 hover:text-blue-800 flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar Novo Card</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {bannerCards.map((card, index) => (
+                      <div
+                        key={card.id || index}
+                        className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 relative group"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                          <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+                            <span className="w-5 h-5 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-[10px]">
+                              {index + 1}
+                            </span>
+                            {card.title || 'Sem título'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBannerCard(card.id)}
+                            className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded-lg transition"
+                            title="Remover este card"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                              TÍTULO DO CARD
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: Crédito Imobiliário"
+                              value={card.title}
+                              onChange={(e) =>
+                                handleUpdateBannerCard(card.id, 'title', e.target.value)
+                              }
+                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                              DESCRIÇÃO / SUBTÍTULO
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: LTV, esteiras Caixa e Itaú"
+                              value={card.subtitle}
+                              onChange={(e) =>
+                                handleUpdateBannerCard(card.id, 'subtitle', e.target.value)
+                              }
+                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                              LINK DE DESTINO (URL)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="ex: /categorias/credito-imobiliario ou https://..."
+                              value={card.url}
+                              onChange={(e) =>
+                                handleUpdateBannerCard(card.id, 'url', e.target.value)
+                              }
+                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                              required
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                                ÍCONE
+                              </label>
+                              <select
+                                value={card.icon}
+                                onChange={(e) =>
+                                  handleUpdateBannerCard(card.id, 'icon', e.target.value)
+                                }
+                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                              >
+                                <option value="home">Imóvel (Casa)</option>
+                                <option value="building">Empresa (PJ)</option>
+                                <option value="sprout">Agro (Planta)</option>
+                                <option value="video">Vídeo</option>
+                                <option value="file">Documento</option>
+                                <option value="dollar">Cifrão ($)</option>
+                                <option value="star">Destaque (Estrela)</option>
+                                <option value="link">Link Externo</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                                COR DO ÍCONE
+                              </label>
+                              <select
+                                value={card.color}
+                                onChange={(e) =>
+                                  handleUpdateBannerCard(card.id, 'color', e.target.value)
+                                }
+                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                              >
+                                <option value="blue">Azul</option>
+                                <option value="emerald">Verde</option>
+                                <option value="cyan">Ciano</option>
+                                <option value="purple">Roxo</option>
+                                <option value="amber">Âmbar</option>
+                                <option value="rose">Vermelho</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* OPÇÃO 2: REPRODUTOR DE VÍDEO INTEGRADO */}
+              {bannerMediaType === 'video' && (
+                <div className="space-y-4 pt-2">
+                  <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl p-3 text-xs leading-relaxed">
+                    💡 <strong>Dica:</strong> Cole o link de qualquer vídeo do <strong>YouTube</strong> (ex: <code>https://www.youtube.com/watch?v=...</code> ou <code>https://youtu.be/...</code>), Vimeo ou Loom. O reprodutor será exibido dentro do banner da página inicial para que todos assistam sem sair do portal!
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                        LINK / URL DO VÍDEO
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={bannerVideoUrl}
+                        onChange={(e) => setBannerVideoUrl(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                        TÍTULO DO VÍDEO NO BANNER
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ex: Treinamento Oficial Safra 2026"
+                        value={bannerVideoTitle}
+                        onChange={(e) => setBannerVideoTitle(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {bannerVideoUrl.trim() && (
+                    <div className="pt-2">
+                      <label className="text-xs font-extrabold text-slate-700 block mb-2">
+                        Pré-visualização do Reprodutor:
+                      </label>
+                      <div className="max-w-xl mx-auto">
+                        <VideoPlayer
+                          url={bannerVideoUrl}
+                          title={bannerVideoTitle || 'Vídeo do Banner'}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-extrabold text-slate-700 block mb-1">TEXTO DO BOTÃO PRINCIPAL</label>
-                <input
-                  type="text"
-                  value={bannerPrimaryBtnText}
-                  onChange={(e) => setBannerPrimaryBtnText(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-extrabold text-slate-700 block mb-1">LINK DO BOTÃO PRINCIPAL</label>
-                <input
-                  type="text"
-                  value={bannerPrimaryBtnUrl}
-                  onChange={(e) => setBannerPrimaryBtnUrl(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-3 border-t border-slate-100">
               <button
                 type="submit"
                 disabled={savingBanner}
-                className="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center space-x-2"
+                className="px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center space-x-2"
               >
                 <Sparkles className="w-4 h-4 text-cyan-300" />
-                <span>{savingBanner ? 'Salvando Banner...' : 'Salvar Banner da Home'}</span>
+                <span>{savingBanner ? 'Salvando Configurações...' : 'Salvar Banner da Home'}</span>
               </button>
             </div>
           </form>

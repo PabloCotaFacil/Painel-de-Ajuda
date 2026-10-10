@@ -8,11 +8,25 @@ export default function AdminArticleEditButton({ articleId }: { articleId: strin
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/credentials')
-      .then((res) => {
-        if (res.ok) setIsAdmin(true);
+    fetch('/api/auth/credentials', {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          setIsAdmin(false);
+          return;
+        }
+        const data = await res.json().catch(() => null);
+        if (data && data.isAdmin === true && data.username) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        setIsAdmin(false);
+      });
   }, []);
 
   if (!isAdmin) return null;

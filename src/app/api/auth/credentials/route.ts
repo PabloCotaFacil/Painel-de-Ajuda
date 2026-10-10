@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { checkIsAdmin, getAdminUsername, setAdminUsername, setAdminPassword } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    return NextResponse.json({ isAdmin: false, error: 'Não autorizado' }, { status: 401 });
   }
 
   const username = await getAdminUsername();
-  return NextResponse.json({ username });
+  return NextResponse.json({ isAdmin: true, username });
 }
 
 export async function POST(request: Request) {

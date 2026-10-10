@@ -1,9 +1,9 @@
-import CategoryCards from '@/components/CategoryCards';
 import ArticleCard from '@/components/ArticleCard';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
 import { notFound } from 'next/navigation';
-import { FolderOpen, Layers } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, FolderOpen, Layers } from 'lucide-react';
 
 // Cache inteligente ISR de 30s para respostas ultrarrápidas
 export const revalidate = 30;
@@ -27,7 +27,18 @@ export default async function CategoryPage({
     });
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
+        {/* Botão de Retornar para a Página Inicial */}
+        <div>
+          <Link
+            href="/"
+            className="inline-flex items-center space-x-2 text-xs font-black text-blue-700 bg-white hover:bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 shadow-sm transition group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>← Voltar para a Página Inicial</span>
+          </Link>
+        </div>
+
         {/* Header Todas as Categorias */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow">
           <div className="flex items-center space-x-3 text-blue-700 font-extrabold text-xs uppercase tracking-wider mb-2">
@@ -39,9 +50,6 @@ export default async function CategoryPage({
             Visão geral de todos os materiais, regras de crédito, esteiras operacionais e treinamentos.
           </p>
         </div>
-
-        {/* Carousel de Categorias */}
-        <CategoryCards activeSlug="all" />
 
         {/* Lista de Artigos */}
         <section className="space-y-4">
@@ -85,7 +93,18 @@ export default async function CategoryPage({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Botão de Retornar para a Página Inicial */}
+      <div>
+        <Link
+          href="/"
+          className="inline-flex items-center space-x-2 text-xs font-black text-blue-700 bg-white hover:bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 shadow-sm transition group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>← Voltar para a Página Inicial</span>
+        </Link>
+      </div>
+
       {/* Category Header */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow">
         <div className="flex items-center space-x-3 text-blue-700 font-extrabold text-xs uppercase tracking-wider mb-2">
@@ -97,9 +116,6 @@ export default async function CategoryPage({
           <p className="text-slate-600 text-sm mt-2">{category.description}</p>
         )}
       </div>
-
-      {/* Category Cards Filter Carousel */}
-      <CategoryCards activeSlug={params.slug} />
 
       {/* Articles List */}
       <section className="space-y-4">

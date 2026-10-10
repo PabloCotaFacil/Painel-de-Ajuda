@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { checkIsAdmin } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function POST(request: Request) {
   const isAdmin = await checkIsAdmin();
@@ -20,27 +21,18 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Save directory
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
-
-    // Clean file name
-    const timestamp = Date.now();
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${timestamp}_${safeName}`;
-    const filePath = path.join(uploadDir, fileName);
-
-    await writeFile(filePath, buffer);
-
-    const fileUrl = `/uploads/${fileName}`;
+    // Converte para Base64 Data URI para persistência direta e segura na nuvem (sem depender de disco local)
+    const mimeType = file.type || 'application/pdf';
+    const base64 = buffer.toString('base64');
+    const fileUrl = `data:${mimeType};base64,${base64}`;
 
     return NextResponse.json({
       success: true,
       fileUrl,
       fileName: file.name,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Upload Error:', error);
-    return NextResponse.json({ error: 'Erro ao fazer upload do arquivo' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Erro ao processar o arquivo' }, { status: 500 });
   }
 }

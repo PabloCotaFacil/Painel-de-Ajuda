@@ -86,6 +86,9 @@ export default function AdminMateriaisClient({
   const [videoUrl, setVideoUrl] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id || '');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [linkDocName, setLinkDocName] = useState('');
+  const [linkDocUrl, setLinkDocUrl] = useState('');
+  const [showAddLinkDoc, setShowAddLinkDoc] = useState(false);
 
   // Form State for Editable Hero Banner
   const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais Safra 2025/2026');

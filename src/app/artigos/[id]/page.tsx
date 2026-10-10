@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/prisma';
-import { checkIsAdmin } from '@/lib/auth';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, FileText, Download, Calendar, Video, Edit2 } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Calendar, Video } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
+import AdminArticleEditButton from '@/components/AdminArticleEditButton';
 
 // Cache inteligente de 60 segundos com ISR para respostas ultrarrápidas
 export const revalidate = 60;
@@ -13,8 +13,6 @@ export default async function ArticleDetailPage({
 }: {
   params: { id: string };
 }) {
-  const isAdmin = await checkIsAdmin();
-
   const article = await prisma.article.findUnique({
     where: { id: params.id },
     include: {
@@ -45,15 +43,7 @@ export default async function ArticleDetailPage({
           <span>Voltar para {article.category.name}</span>
         </Link>
 
-        {isAdmin && (
-          <Link
-            href={`/admin/materiais?edit=${article.id}`}
-            className="inline-flex items-center space-x-1.5 text-xs font-bold bg-amber-400 hover:bg-amber-500 text-slate-950 px-4 py-2 rounded-xl transition shadow-sm"
-          >
-            <Edit2 className="w-4 h-4" />
-            <span>Editar este Material</span>
-          </Link>
-        )}
+        <AdminArticleEditButton articleId={article.id} />
       </div>
 
       {/* Main Article Header Card */}

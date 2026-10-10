@@ -48,7 +48,7 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
   ];
 
   return (
-    <section className={floating ? '-mt-10 sm:-mt-14 relative z-20 mb-8' : 'py-4'}>
+    <section className={floating ? '-mt-4 sm:-mt-6 relative z-20 mb-8' : 'py-4'}>
       {/* Grid of Bevi-Ajuda Style Category Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {categories.map((cat) => {

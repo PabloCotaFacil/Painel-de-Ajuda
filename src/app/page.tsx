@@ -87,14 +87,14 @@ export default async function HomePage({
   return (
     <div className="space-y-8">
       {/* ============================================================ */}
-      {/* BEVI-AJUDA STYLE HERO BANNER COM AZUL CLAREADO E GRAFISMOS    */}
+      {/* BEVI-AJUDA STYLE HERO BANNER COMPACTO EM ALTURA & PANORÂMICO */}
       {/* ============================================================ */}
-      <div className="gradient-hero rounded-3xl p-6 sm:p-12 text-white shadow-2xl relative overflow-hidden">
+      <div className="gradient-hero rounded-3xl px-5 sm:px-8 py-6 sm:py-7 text-white shadow-xl relative overflow-hidden">
         {/* GRAFISMOS VETORIAIS EXCLUSIVOS NO FUNDO (ONDAS E CÍRCULOS) */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
           {/* Ondas orgânicas fluidas */}
           <svg
-            className="absolute -right-20 -top-24 w-[650px] h-[650px] opacity-15 text-white"
+            className="absolute -right-20 -top-24 w-[550px] h-[550px] opacity-15 text-white"
             viewBox="0 0 500 500"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -111,7 +111,7 @@ export default async function HomePage({
 
           {/* Grafismo circular e arcos translúcidos à esquerda */}
           <svg
-            className="absolute -left-32 -bottom-32 w-[480px] h-[480px] opacity-10 text-cyan-200"
+            className="absolute -left-32 -bottom-32 w-[420px] h-[420px] opacity-10 text-cyan-200"
             viewBox="0 0 400 400"
             fill="none"
           >
@@ -121,66 +121,68 @@ export default async function HomePage({
           </svg>
 
           {/* Gradiente de iluminação suave */}
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-1/4 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl" />
         </div>
 
         {/* HERO CONTENT */}
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pb-6 sm:pb-8">
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* Coluna Esquerda: Textos e Busca Central */}
-          <div className="lg:col-span-8 space-y-4">
-            {heroBanner.badgeText && (
-              <div className="inline-flex items-center space-x-2 bg-white/15 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs text-cyan-200 font-bold border border-white/20">
-                <Sparkles className="w-3.5 h-3.5 shrink-0 text-cyan-300" />
-                <span>{heroBanner.badgeText}</span>
-              </div>
-            )}
+          <div className="lg:col-span-7 space-y-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-cyan-200 text-xs sm:text-sm font-bold tracking-wide">
+                Olá! Bem-vindo ao Hub de Apoio CotaFácil.
+              </span>
+              {heroBanner.badgeText && (
+                <div className="inline-flex items-center space-x-1.5 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-cyan-200 font-bold border border-white/20">
+                  <Sparkles className="w-3 h-3 shrink-0 text-cyan-300" />
+                  <span>{heroBanner.badgeText}</span>
+                </div>
+              )}
+            </div>
 
             <div>
-              <p className="text-cyan-200 text-sm sm:text-base font-bold tracking-wide">
-                Olá! Bem-vindo ao Hub de Apoio CotaFácil.
-              </p>
-              <h1 className="text-3xl sm:text-5xl font-black leading-tight tracking-tight mt-1 text-white">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-tight tracking-tight text-white">
                 {heroBanner.title || 'Como podemos te ajudar?'}
               </h1>
               {heroBanner.subtitle && (
-                <p className="text-blue-100 text-xs sm:text-sm mt-2 max-w-xl leading-relaxed">
+                <p className="text-blue-100 text-xs sm:text-xs mt-1 max-w-lg leading-relaxed line-clamp-2">
                   {heroBanner.subtitle}
                 </p>
               )}
             </div>
 
-            {/* BARRA DE PESQUISA INTEGRADA NO HERO (ESTILO BEVI AJUDA) */}
-            <form action="/" method="GET" className="pt-2 max-w-xl">
+            {/* BARRA DE PESQUISA INTEGRADA NO HERO COMPACTA */}
+            <form action="/" method="GET" className="pt-1 max-w-xl">
               <div className="relative flex items-center">
                 <input
                   type="text"
                   name="q"
                   defaultValue={query}
                   placeholder="Buscar regras, taxas, LTV, Pronampe, CPR, manuais..."
-                  className="w-full pl-5 pr-28 py-3.5 sm:py-4 bg-white text-slate-900 placeholder-slate-400 text-xs sm:text-sm font-semibold rounded-2xl shadow-xl focus:outline-none focus:ring-4 focus:ring-cyan-300/60"
+                  className="w-full pl-4 sm:pl-5 pr-24 sm:pr-28 py-2.5 sm:py-3.5 bg-white text-slate-900 placeholder-slate-400 text-xs sm:text-sm font-semibold rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-300/60"
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 top-2 bottom-2 px-5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold text-xs sm:text-sm rounded-xl transition shadow flex items-center space-x-1.5"
+                  className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-extrabold text-xs sm:text-sm rounded-lg transition shadow flex items-center space-x-1.5"
                 >
-                  <Search className="w-4 h-4" />
+                  <Search className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Buscar</span>
                 </button>
               </div>
 
               {/* Tags de busca frequente */}
-              <div className="flex items-center space-x-2 text-[11px] text-cyan-100/90 mt-2.5 overflow-x-auto scrollbar-none pb-1">
-                <span className="font-bold shrink-0">Mais buscados:</span>
-                <Link href="/?q=Habita%C3%A7%C3%A3o" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap">
+              <div className="flex items-center space-x-1.5 text-[11px] text-cyan-100/90 mt-2 overflow-x-auto scrollbar-none pb-0.5">
+                <span className="font-bold shrink-0 text-[10px] uppercase tracking-wider text-cyan-200">Mais buscados:</span>
+                <Link href="/?q=Habita%C3%A7%C3%A3o" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
                   Habitação Caixa
                 </Link>
-                <Link href="/?q=Pronampe" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap">
+                <Link href="/?q=Pronampe" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
                   Pronampe PJ
                 </Link>
-                <Link href="/?q=CPR" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap">
+                <Link href="/?q=CPR" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
                   CPR Agro
                 </Link>
-                <Link href="/?q=Home%20Equity" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap">
+                <Link href="/?q=Home%20Equity" className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition whitespace-nowrap text-[11px]">
                   Home Equity
                 </Link>
               </div>

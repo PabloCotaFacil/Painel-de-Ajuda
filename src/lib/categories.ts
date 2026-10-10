@@ -34,11 +34,20 @@ export const DEFAULT_CATEGORIES: DefaultCategoryDef[] = [
   },
 ];
 
+let cachedCategories: any[] | null = null;
+let lastCacheTime = 0;
+
 /**
  * Garante que o banco de dados sempre tenha as categorias básicas cadastradas,
  * evitando erros 404 em categorias e formulários com categorias vazias.
+ * Usa cache de 60 segundos em memória para respostas instantâneas (0ms).
  */
 export async function getOrSeedCategories() {
+  const now = Date.now();
+  if (cachedCategories && cachedCategories.length > 0 && now - lastCacheTime < 60000) {
+    return cachedCategories;
+  }
+
   try {
     let categories = await prisma.category.findMany({
       orderBy: { name: 'asc' },
@@ -58,6 +67,8 @@ export async function getOrSeedCategories() {
       });
     }
 
+    cachedCategories = categories;
+    lastCacheTime = now;
     return categories;
   } catch (error) {
     console.error('Erro ao buscar/garantir categorias:', error);

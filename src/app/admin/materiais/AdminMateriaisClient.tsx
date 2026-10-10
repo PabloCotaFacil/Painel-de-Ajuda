@@ -272,8 +272,10 @@ export default function AdminMateriaisClient({
       .catch(() => {});
   }, []);
 
-  const handleSaveBanner = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveBanner = async (e?: React.FormEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
     setSavingBanner(true);
     setMessage(null);
 
@@ -288,20 +290,32 @@ export default function AdminMateriaisClient({
           primaryButtonText: bannerPrimaryBtnText,
           primaryButtonUrl: bannerPrimaryBtnUrl,
           mediaType: bannerMediaType,
-          videoUrl: bannerVideoUrl,
-          videoTitle: bannerVideoTitle,
+          videoUrl: bannerVideoUrl.trim(),
+          videoTitle: bannerVideoTitle.trim(),
           cardsJson: JSON.stringify(bannerCards),
         }),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (res.ok) {
-        setMessage({ type: 'success', text: 'Banner principal atualizado na Home!' });
+        setMessage({ type: 'success', text: 'Banner principal atualizado na Home com sucesso!' });
         router.refresh();
       } else {
-        setMessage({ type: 'error', text: 'Erro ao atualizar o banner' });
+        if (res.status === 401) {
+          setMessage({
+            type: 'error',
+            text: 'Sua sessão expirou ou você não está logado. Por favor, acerte seu login.',
+          });
+        } else {
+          setMessage({
+            type: 'error',
+            text: data?.error || 'Erro ao atualizar o banner no servidor.',
+          });
+        }
       }
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Erro de conexão com o servidor' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Erro de conexão com o servidor ao salvar o banner.' });
     } finally {
       setSavingBanner(false);
     }
@@ -1268,11 +1282,11 @@ export default function AdminMateriaisClient({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-extrabold text-slate-700 block mb-1">
-                        LINK / URL DO VÍDEO
+                        LINK / URL DO VÍDEO (YOUTUBE, VIMEO, LOOM)
                       </label>
                       <input
-                        type="url"
-                        placeholder="https://www.youtube.com/watch?v=..."
+                        type="text"
+                        placeholder="https://www.youtube.com/watch?v=... ou https://youtu.be/..."
                         value={bannerVideoUrl}
                         onChange={(e) => setBannerVideoUrl(e.target.value)}
                         className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"

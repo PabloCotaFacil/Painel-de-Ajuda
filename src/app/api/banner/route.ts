@@ -70,63 +70,64 @@ export async function GET() {
 export async function PUT(request: Request) {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Sessão expirada ou não autorizada. Faça login novamente no painel.' },
+      { status: 401 }
+    );
   }
 
   try {
     const body = await request.json();
     const {
-      badgeText,
-      title,
-      subtitle,
-      primaryButtonText,
-      primaryButtonUrl,
-      secondaryButtonText,
-      secondaryButtonUrl,
-      mediaType,
-      videoUrl,
-      videoTitle,
+      badgeText = '',
+      title = '',
+      subtitle = '',
+      primaryButtonText = '',
+      primaryButtonUrl = '',
+      secondaryButtonText = '',
+      secondaryButtonUrl = '',
+      mediaType = 'cards',
+      videoUrl = '',
+      videoTitle = '',
       cardsJson,
     } = body;
 
-    const formattedCardsJson =
-      typeof cardsJson === 'string'
-        ? cardsJson
-        : JSON.stringify(cardsJson || []);
+    let formattedCardsJson = defaultCards;
+    if (typeof cardsJson === 'string' && cardsJson.trim().length > 0) {
+      formattedCardsJson = cardsJson;
+    } else if (Array.isArray(cardsJson)) {
+      formattedCardsJson = JSON.stringify(cardsJson);
+    }
+
+    const safeData = {
+      badgeText: String(badgeText ?? 'Regras & Manuais Safra 2025/2026'),
+      title: String(title ?? 'Como podemos te ajudar?'),
+      subtitle: String(subtitle ?? ''),
+      primaryButtonText: String(primaryButtonText ?? 'Ver Regras & Manuais'),
+      primaryButtonUrl: String(primaryButtonUrl ?? '/categorias/treinamentos'),
+      secondaryButtonText: String(secondaryButtonText ?? ''),
+      secondaryButtonUrl: String(secondaryButtonUrl ?? ''),
+      mediaType: mediaType === 'video' ? 'video' : 'cards',
+      videoUrl: String(videoUrl ?? '').trim(),
+      videoTitle: String(videoTitle ?? '').trim(),
+      cardsJson: formattedCardsJson,
+    };
 
     const banner = await prisma.heroBanner.upsert({
       where: { id: 'default-hero' },
-      update: {
-        badgeText,
-        title,
-        subtitle,
-        primaryButtonText,
-        primaryButtonUrl,
-        secondaryButtonText,
-        secondaryButtonUrl,
-        mediaType: mediaType || 'cards',
-        videoUrl: videoUrl || '',
-        videoTitle: videoTitle || '',
-        cardsJson: formattedCardsJson,
-      },
+      update: safeData,
       create: {
         id: 'default-hero',
-        badgeText,
-        title,
-        subtitle,
-        primaryButtonText,
-        primaryButtonUrl,
-        secondaryButtonText,
-        secondaryButtonUrl,
-        mediaType: mediaType || 'cards',
-        videoUrl: videoUrl || '',
-        videoTitle: videoTitle || '',
-        cardsJson: formattedCardsJson,
+        ...safeData,
       },
     });
 
     return NextResponse.json(banner);
-  } catch (error) {
-    return NextResponse.json({ error: 'Erro ao atualizar banner' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Erro ao atualizar banner:', error);
+    return NextResponse.json(
+      { error: error?.message || 'Erro ao atualizar banner no banco de dados' },
+      { status: 500 }
+    );
   }
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
 import Header from '@/components/Header';
+import NavigationProgressBar from '@/components/NavigationProgressBar';
 
 export const metadata: Metadata = {
   title: 'Hub de Apoio Operacional | CotaFácil',
@@ -15,9 +17,12 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col justify-between">
+        <Suspense fallback={null}>
+          <NavigationProgressBar />
+        </Suspense>
         <div>
           <Header />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+          <main className="max-w-[1440px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">{children}</main>
         </div>
 
         {/* Footer */}

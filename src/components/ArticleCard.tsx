@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, Download, Info, Calendar, Video } from 'lucide-react';
+import { FileText, Download, Info, Calendar, Video, Eye } from 'lucide-react';
 
 interface Attachment {
   id: string;
@@ -67,17 +67,14 @@ export default function ArticleCard({ article }: { article: Article }) {
       {/* Footer Attachments & Action */}
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
         {article.attachments && article.attachments.length > 0 ? (
-          <a
-            href={article.attachments[0].fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download={article.attachments[0].fileUrl.startsWith('data:') ? article.attachments[0].name : undefined}
-            className="inline-flex items-center space-x-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 transition shrink-0 max-w-[70%]"
+          <Link
+            href={`/artigos/${article.id}#pdf-viewer-section`}
+            className="inline-flex items-center space-x-1.5 text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg border border-blue-200 transition shrink-0 max-w-[70%]"
+            title="Visualizar manual diretamente no site"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             <span className="truncate">{article.attachments[0].name}</span>
-            <Download className="w-3 h-3 shrink-0 ml-0.5 text-emerald-600" />
-          </a>
+          </Link>
         ) : article.videoUrl ? (
           <span className="text-xs text-rose-600 font-semibold flex items-center gap-1">
             <Video className="w-3.5 h-3.5" />

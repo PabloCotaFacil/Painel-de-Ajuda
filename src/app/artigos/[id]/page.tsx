@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, FileText, Download, Calendar, Video } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import AdminArticleEditButton from '@/components/AdminArticleEditButton';
+import ArticleAttachments from '@/components/ArticleAttachments';
 
 // Cache inteligente de 60 segundos com ISR para respostas ultrarrápidas
 export const revalidate = 60;
@@ -81,34 +82,9 @@ export default async function ArticleDetailPage({
           <VideoPlayer url={article.videoUrl} title={article.title} />
         )}
 
-        {/* Downloadable PDF attachments section */}
+        {/* Downloadable & Viewable PDF attachments section */}
         {article.attachments.length > 0 && (
-          <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-200 space-y-3">
-            <h3 className="text-xs font-black text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-emerald-700" />
-              Documentos & PDFs para Download
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {article.attachments.map((file) => (
-                <a
-                  key={file.id}
-                  href={file.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={file.fileUrl.startsWith('data:') ? file.name : undefined}
-                  className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-emerald-300 hover:border-emerald-500 transition shadow-sm group"
-                >
-                  <div className="flex items-center space-x-2.5 overflow-hidden">
-                    <FileText className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span className="text-xs font-bold text-slate-800 truncate group-hover:text-emerald-700">
-                      {file.name}
-                    </span>
-                  </div>
-                  <Download className="w-4 h-4 text-emerald-700 shrink-0 ml-2" />
-                </a>
-              ))}
-            </div>
-          </div>
+          <ArticleAttachments attachments={article.attachments} />
         )}
 
         {/* Formatted Content Body */}

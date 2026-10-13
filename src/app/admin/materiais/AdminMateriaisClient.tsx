@@ -89,6 +89,7 @@ export default function AdminMateriaisClient({
   const [linkDocName, setLinkDocName] = useState('');
   const [linkDocUrl, setLinkDocUrl] = useState('');
   const [showAddLinkDoc, setShowAddLinkDoc] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // Form State for Editable Hero Banner
   const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais Safra 2025/2026');
@@ -408,41 +409,94 @@ export default function AdminMateriaisClient({
     e.target.value = '';
 
     setUploading(true);
+    setUploadProgress(0);
     setMessage(null);
 
-    // Limite de segurança de 4.2 MB para envio direto em Base64 no banco via Vercel (limite da Vercel é 4.5MB)
-    const MAX_SIZE_MB = 4.2;
+    // Suporte a arquivos de até 50 MB via envio particionado inteligente (Chunked Upload)
+    const MAX_SIZE_MB = 50;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1);
       setMessage({
         type: 'error',
-        text: `O arquivo possui ${fileSizeMb}MB e ultrapassa o limite direto de ${MAX_SIZE_MB}MB. Para manuais grandes, utilize a opção "Adicionar Link (Google Drive / Nuvem)" logo abaixo!`,
+        text: `O arquivo possui ${fileSizeMb}MB e ultrapassa o limite máximo de ${MAX_SIZE_MB}MB. Para manuais acima de 50MB, utilize a opção "Adicionar Link (Nuvem / Drive)" logo abaixo!`,
       });
       setUploading(false);
+      setUploadProgress(null);
       return;
     }
 
     try {
-      // Processamento 100% nativo no navegador via FileReader:
-      // Converte para Base64 instantaneamente sem depender de APIs externas ou sofrer com timeouts
-      const reader = new FileReader();
+      // Divide o arquivo em pedaços de 1.5MB (passa com folga pelo limite de 4.5MB da Vercel)
+      const CHUNK_SIZE = 1.5 * 1024 * 1024;
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      const uploadId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-      reader.onload = () => {
-        const fileUrl = reader.result as string;
-        setAttachments((prev) => [...prev, { name: file.name, fileUrl }]);
-        setMessage({ type: 'success', text: `Arquivo "${file.name}" anexado com sucesso!` });
-        setUploading(false);
+      const readBlobAsBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            const base64 = dataUrl.split(',')[1] || '';
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
       };
 
-      reader.onerror = () => {
-        setMessage({ type: 'error', text: 'Não foi possível ler o arquivo selecionado no navegador.' });
-        setUploading(false);
-      };
+      let finalFileUrl = '';
+      let finalFileName = file.name;
 
-      reader.readAsDataURL(file);
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(file.size, (i + 1) * CHUNK_SIZE);
+        const chunkBlob = file.slice(start, end);
+        const chunkBase64 = await readBlobAsBase64(chunkBlob);
+
+        const res = await fetch('/api/upload/chunk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uploadId,
+            chunkIndex: i,
+            totalChunks,
+            chunkData: chunkBase64,
+            fileName: file.name,
+            mimeType: file.type || 'application/pdf',
+            fileSize: file.size,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Erro ao enviar pedaço ${i + 1} de ${totalChunks}`);
+        }
+
+        const data = await res.json();
+        const pct = Math.round(((i + 1) / totalChunks) * 100);
+        setUploadProgress(pct);
+
+        if (data.completed && data.fileUrl) {
+          finalFileUrl = data.fileUrl;
+          finalFileName = data.fileName || file.name;
+        }
+      }
+
+      if (finalFileUrl) {
+        setAttachments((prev) => [...prev, { name: finalFileName, fileUrl: finalFileUrl }]);
+        setMessage({
+          type: 'success',
+          text: `Arquivo "${finalFileName}" (${(file.size / (1024 * 1024)).toFixed(1)}MB) anexado com sucesso!`,
+        });
+      } else {
+        throw new Error('Falha ao concluir a montagem do arquivo no servidor.');
+      }
     } catch (err: any) {
-      setMessage({ type: 'error', text: `Falha ao processar o arquivo: ${err?.message || 'Erro desconhecido'}` });
+      console.error('Upload Error:', err);
+      setMessage({ type: 'error', text: `Falha no upload do PDF: ${err?.message || 'Erro de conexão'}` });
+    } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -974,14 +1028,22 @@ export default function AdminMateriaisClient({
                     PDFs & Materiais Anexos para Download
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Suba arquivos PDF do seu dispositivo (até 4MB) ou adicione links do Google Drive / OneDrive para manuais pesados.
+                    Suba arquivos PDF de até 50MB direto no sistema ou adicione links do Google Drive / Nuvem.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs transition shadow-sm">
+                  <label className={`cursor-pointer inline-flex items-center space-x-2 font-extrabold px-3.5 py-2 rounded-xl text-xs transition shadow-sm ${
+                    uploading ? 'bg-blue-500 text-white cursor-wait' : 'bg-blue-700 hover:bg-blue-800 text-white'
+                  }`}>
                     <Upload className="w-4 h-4" />
-                    <span>{uploading ? 'Processando...' : 'Subir Arquivo PDF'}</span>
+                    <span>
+                      {uploading
+                        ? uploadProgress !== null
+                          ? `Enviando PDF (${uploadProgress}%)...`
+                          : 'Processando...'
+                        : 'Subir Arquivo PDF (até 50MB)'}
+                    </span>
                     <input
                       type="file"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
@@ -1001,6 +1063,22 @@ export default function AdminMateriaisClient({
                   </button>
                 </div>
               </div>
+
+              {/* Barra de Progresso em Tempo Real */}
+              {uploading && uploadProgress !== null && (
+                <div className="space-y-1.5 bg-blue-50 p-3 rounded-xl border border-blue-200">
+                  <div className="flex justify-between text-xs font-bold text-blue-900">
+                    <span>Progresso do Upload</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full transition-all duration-200 ease-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Form para adicionar Link de Documento */}
               {showAddLinkDoc && (

@@ -88,3 +88,23 @@ model SystemConfig {
   key   String @id
   value String
 }
+
+model StoredFile {
+  id        String   @id @default(uuid())
+  name      String
+  mimeType  String   @default("application/pdf")
+  size      Int      @default(0)
+  data      String   // Base64 encoded file content
+  createdAt DateTime @default(now())
+}
+
+model UploadChunk {
+  id          String   @id @default(uuid())
+  uploadId    String
+  chunkIndex  Int
+  totalChunks Int
+  data        String   // Base64 chunk data (~1.5MB each)
+  createdAt   DateTime @default(now())
+
+  @@index([uploadId, chunkIndex])
+}

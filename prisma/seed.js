@@ -56,10 +56,10 @@ async function main() {
 
   const catTreinamento = await prisma.category.create({
     data: {
-      name: 'Regras & Treinamentos',
+      name: 'Treinamentos e Videoaulas',
       slug: 'treinamentos',
-      description: 'Manuais de produto, resumos operacionais e regras de esteira.',
-      icon: 'book',
+      description: 'Vídeos de treinamento, videoaulas e tutoriais operacionais.',
+      icon: 'video',
     },
   });
 

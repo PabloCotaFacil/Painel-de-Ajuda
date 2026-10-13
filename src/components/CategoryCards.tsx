@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Building2, Sprout, BookOpen, Layers } from 'lucide-react';
+import { Home, Building2, Sprout, BookOpen, Layers, Video } from 'lucide-react';
 
 interface CategoryCardsProps {
   activeSlug?: string;
@@ -39,10 +39,10 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
       isDark: false,
     },
     {
-      name: 'REGRAS & TREINAMENTOS',
+      name: 'TREINAMENTOS E VIDEOAULAS',
       slug: 'treinamentos',
-      description: 'Vídeos de treinamento, esteiras operacionais e manuais.',
-      icon: BookOpen,
+      description: 'Vídeos de treinamento, videoaulas e tutoriais operacionais.',
+      icon: Video,
       isDark: false,
     },
   ];

@@ -10,20 +10,30 @@ async function check() {
       { name: 'Crédito Imobiliário', slug: 'imobiliario', description: 'Financiamento habitacional, Home Equity, repasse bancário e regras de LTV.', icon: 'home' },
       { name: 'Crédito PJ & Giro', slug: 'credito-pj', description: 'Capital de Giro, FGO, Pronampe, Antecipação de Recebíveis e Linhas de Garantia.', icon: 'building' },
       { name: 'Crédito Agro', slug: 'credito-agro', description: 'Custeio agrícola/pecuário, CPR, Investimento, Moderfrota e Pronaf.', icon: 'sprout' },
-      { name: 'Regras & Treinamentos', slug: 'treinamentos', description: 'Vídeos de treinamento, esteiras operacionais, resumos de regras e manuais.', icon: 'book' },
+      { name: 'Treinamentos e Videoaulas', slug: 'treinamentos', description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.', icon: 'video' },
     ];
     for (const c of defaults) {
-      await prisma.category.upsert({ where: { slug: c.slug }, update: {}, create: c });
+      await prisma.category.upsert({ where: { slug: c.slug }, update: { name: c.name, description: c.description, icon: c.icon }, create: c });
     }
     const updated = await prisma.category.findMany();
     console.log('Updated categories count:', updated.length);
   } else {
-    categories.forEach(c => console.log(' -', c.name, '(', c.slug, ')'));
+    // Ensure 'treinamentos' category has updated name
+    await prisma.category.updateMany({
+      where: { slug: 'treinamentos' },
+      data: {
+        name: 'Treinamentos e Videoaulas',
+        description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.',
+        icon: 'video',
+      },
+    });
+    const refreshed = await prisma.category.findMany();
+    refreshed.forEach(c => console.log(' -', c.name, '(', c.slug, ')'));
   }
 
   // Also check heroBanner
   const banner = await prisma.heroBanner.findUnique({ where: { id: 'default-hero' } });
-  console.log('Hero banner:', banner ? banner.title : 'null');
+  console.log('Hero banner:', banner ? JSON.stringify(banner, null, 2) : 'null');
   if (!banner) {
     await prisma.heroBanner.create({
       data: {
@@ -48,8 +58,9 @@ async function check() {
     }
   }
 
-  const articles = await prisma.article.findMany();
+  const articles = await prisma.article.findMany({ include: { category: true } });
   console.log('Articles count:', articles.length);
+  articles.forEach(a => console.log(' - Article:', a.title, '| Category:', a.category.name));
 }
 
 check()

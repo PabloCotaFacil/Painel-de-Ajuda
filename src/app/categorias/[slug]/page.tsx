@@ -5,8 +5,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FolderOpen, Layers } from 'lucide-react';
 
-// Cache inteligente ISR de 30s para respostas ultrarrápidas
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function CategoryPage({
   params,

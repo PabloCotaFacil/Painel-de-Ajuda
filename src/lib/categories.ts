@@ -27,10 +27,10 @@ export const DEFAULT_CATEGORIES: DefaultCategoryDef[] = [
     icon: 'sprout',
   },
   {
-    name: 'Regras & Treinamentos',
+    name: 'Treinamentos e Videoaulas',
     slug: 'treinamentos',
-    description: 'Vídeos de treinamento, esteiras operacionais, resumos de regras e manuais.',
-    icon: 'book',
+    description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.',
+    icon: 'video',
   },
 ];
 
@@ -57,7 +57,7 @@ export async function getOrSeedCategories() {
       for (const cat of DEFAULT_CATEGORIES) {
         await prisma.category.upsert({
           where: { slug: cat.slug },
-          update: {},
+          update: { name: cat.name, description: cat.description, icon: cat.icon },
           create: cat,
         });
       }
@@ -65,6 +65,22 @@ export async function getOrSeedCategories() {
       categories = await prisma.category.findMany({
         orderBy: { name: 'asc' },
       });
+    } else {
+      // Atualiza o nome da categoria de treinamentos caso ainda esteja com o nome antigo
+      const oldTreinamento = categories.find((c) => c.slug === 'treinamentos' && c.name !== 'Treinamentos e Videoaulas');
+      if (oldTreinamento) {
+        await prisma.category.update({
+          where: { slug: 'treinamentos' },
+          data: {
+            name: 'Treinamentos e Videoaulas',
+            description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.',
+            icon: 'video',
+          },
+        });
+        categories = await prisma.category.findMany({
+          orderBy: { name: 'asc' },
+        });
+      }
     }
 
     cachedCategories = categories;

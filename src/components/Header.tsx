@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Search, Home, BookOpen, Layers } from 'lucide-react';
+import { Search, Home, BookOpen, Layers, Video } from 'lucide-react';
 
 export default function Header({ initialSearch = '' }: { initialSearch?: string }) {
   const [search, setSearch] = useState(initialSearch);
@@ -108,8 +108,8 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
             🌾 Crédito Agro
           </Link>
           <Link href="/categorias/treinamentos" className="hover:text-blue-600 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0">
-            <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>Regras & Treinamentos</span>
+            <Video className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span>Treinamentos e Videoaulas</span>
           </Link>
         </div>
       </div>

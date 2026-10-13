@@ -95,6 +95,7 @@ export default async function ArticleDetailPage({
                   href={file.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  download={file.fileUrl.startsWith('data:') ? file.name : undefined}
                   className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-emerald-300 hover:border-emerald-500 transition shadow-sm group"
                 >
                   <div className="flex items-center space-x-2.5 overflow-hidden">

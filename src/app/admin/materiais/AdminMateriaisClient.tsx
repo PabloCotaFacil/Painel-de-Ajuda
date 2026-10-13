@@ -382,6 +382,9 @@ export default function AdminMateriaisClient({
     setVideoUrl('');
     setCategoryId(categories[0]?.id || '');
     setAttachments([]);
+    setLinkDocName('');
+    setLinkDocUrl('');
+    setShowAddLinkDoc(false);
     setMessage(null);
   };
 
@@ -401,30 +404,59 @@ export default function AdminMateriaisClient({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
+    e.target.value = '';
+
     setUploading(true);
     setMessage(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
+    // Limite de segurança de 4.2 MB para envio direto em Base64 no banco via Vercel (limite da Vercel é 4.5MB)
+    const MAX_SIZE_MB = 4.2;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setMessage({
+        type: 'error',
+        text: `O arquivo possui ${fileSizeMb}MB e ultrapassa o limite direto de ${MAX_SIZE_MB}MB. Para manuais grandes, utilize a opção "Adicionar Link (Google Drive / Nuvem)" logo abaixo!`,
+      });
+      setUploading(false);
+      return;
+    }
 
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      // Processamento 100% nativo no navegador via FileReader:
+      // Converte para Base64 instantaneamente sem depender de APIs externas ou sofrer com timeouts
+      const reader = new FileReader();
 
-      const data = await res.json();
-      if (res.ok) {
-        setAttachments((prev) => [...prev, { name: data.fileName, fileUrl: data.fileUrl }]);
-        setMessage({ type: 'success', text: `Arquivo ${data.fileName} enviado com sucesso!` });
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Erro ao enviar arquivo' });
-      }
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Falha no upload do PDF' });
-    } finally {
+      reader.onload = () => {
+        const fileUrl = reader.result as string;
+        setAttachments((prev) => [...prev, { name: file.name, fileUrl }]);
+        setMessage({ type: 'success', text: `Arquivo "${file.name}" anexado com sucesso!` });
+        setUploading(false);
+      };
+
+      reader.onerror = () => {
+        setMessage({ type: 'error', text: 'Não foi possível ler o arquivo selecionado no navegador.' });
+        setUploading(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: `Falha ao processar o arquivo: ${err?.message || 'Erro desconhecido'}` });
       setUploading(false);
     }
+  };
+
+  const handleAddLinkAttachment = () => {
+    if (!linkDocUrl.trim()) {
+      setMessage({ type: 'error', text: 'Informe a URL ou link do arquivo (ex: link do Google Drive, OneDrive ou link direto).' });
+      return;
+    }
+    const name = linkDocName.trim() || 'Documento em PDF (Link)';
+    setAttachments((prev) => [...prev, { name, fileUrl: linkDocUrl.trim() }]);
+    setLinkDocName('');
+    setLinkDocUrl('');
+    setShowAddLinkDoc(false);
+    setMessage({ type: 'success', text: `Link "${name}" adicionado com sucesso aos anexos!` });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -935,39 +967,114 @@ export default function AdminMateriaisClient({
 
             {/* Attachments Section */}
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                     <FileText className="w-4 h-4 text-cyan-600" />
                     PDFs & Materiais Anexos para Download
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Faça upload de manuais, checklists e tabelas para os usuários baixarem.
+                    Suba arquivos PDF do seu dispositivo (até 4MB) ou adicione links do Google Drive / OneDrive para manuais pesados.
                   </p>
                 </div>
 
-                <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition shadow-sm">
-                  <Upload className="w-4 h-4" />
-                  <span>{uploading ? 'Enviando PDF...' : 'Subir Arquivo PDF'}</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                  />
-                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs transition shadow-sm">
+                    <Upload className="w-4 h-4" />
+                    <span>{uploading ? 'Processando...' : 'Subir Arquivo PDF'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAddLinkDoc(!showAddLinkDoc)}
+                    className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs border border-slate-300 transition shadow-sm"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Adicionar Link (Nuvem / Drive)</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Form para adicionar Link de Documento */}
+              {showAddLinkDoc && (
+                <div className="bg-white p-4 rounded-xl border border-blue-200 space-y-3 animate-in fade-in">
+                  <div className="text-xs font-black text-blue-900 flex items-center gap-1.5">
+                    <ExternalLink className="w-4 h-4 text-blue-600" />
+                    <span>Anexar Material por Link (Google Drive, OneDrive ou Link Direto)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                        Nome de Exibição do Arquivo:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ex: Manual Operacional Safra 2026 Caixa.pdf"
+                        value={linkDocName}
+                        onChange={(e) => setLinkDocName(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                        URL do Arquivo (Link de compartilhamento):
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://drive.google.com/... ou https://..."
+                        value={linkDocUrl}
+                        onChange={(e) => setLinkDocUrl(e.target.value)}
+                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddLinkDoc(false)}
+                      className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddLinkAttachment}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-lg transition"
+                    >
+                      + Anexar Link
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {attachments.length > 0 && (
                 <div className="space-y-2 pt-2">
                   {attachments.map((att, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
-                      <span className="text-xs font-bold text-slate-800 truncate">{att.name}</span>
+                      <div className="flex items-center space-x-2 min-w-0 pr-2">
+                        <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="text-xs font-bold text-slate-800 truncate">{att.name}</span>
+                        {att.fileUrl?.startsWith('data:') ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 shrink-0 border border-emerald-200">
+                            Arquivo Direto
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0 border border-blue-200">
+                            Link Externo
+                          </span>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
-                        className="text-rose-600 hover:text-rose-800 text-xs font-bold"
+                        className="text-rose-600 hover:text-rose-800 text-xs font-bold shrink-0"
                       >
                         Remover
                       </button>

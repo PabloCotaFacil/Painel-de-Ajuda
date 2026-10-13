@@ -71,6 +71,7 @@ export default function ArticleCard({ article }: { article: Article }) {
             href={article.attachments[0].fileUrl}
             target="_blank"
             rel="noopener noreferrer"
+            download={article.attachments[0].fileUrl.startsWith('data:') ? article.attachments[0].name : undefined}
             className="inline-flex items-center space-x-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 transition shrink-0 max-w-[70%]"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />

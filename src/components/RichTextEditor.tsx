@@ -38,17 +38,42 @@ export default function RichTextEditor({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [showCodeMode, setShowCodeMode] = useState(false);
-  const [htmlContent, setHtmlContent] = useState(value);
+  const [htmlContent, setHtmlContent] = useState(value || '');
 
-  // Sync internal ref with external value if needed
+  const isInitializedRef = useRef(false);
+  const lastHtmlRef = useRef(value || '');
+
+  // Inicializa o conteúdo no editor e sincroniza apenas quando o valor vier de fora
+  // (ex: carregar material para edição ou limpar formulário), sem resetar o cursor ao digitar.
   useEffect(() => {
-    if (editorRef.current && !showCodeMode) {
-      if (editorRef.current.innerHTML !== value) {
-        editorRef.current.innerHTML = value || '';
-      }
+    if (!isInitializedRef.current && editorRef.current) {
+      editorRef.current.innerHTML = value || '';
+      lastHtmlRef.current = value || '';
+      isInitializedRef.current = true;
+      return;
     }
+
+    // Se o valor for exatamente o que o usuário acabou de digitar, não recria o DOM para preservar o cursor
+    if (value === lastHtmlRef.current) {
+      return;
+    }
+
+    lastHtmlRef.current = value || '';
     setHtmlContent(value || '');
+
+    if (editorRef.current && !showCodeMode) {
+      editorRef.current.innerHTML = value || '';
+    }
   }, [value, showCodeMode]);
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      lastHtmlRef.current = html;
+      setHtmlContent(html);
+      onChange(html);
+    }
+  };
 
   const exec = (command: string, val: string | undefined = undefined) => {
     if (showCodeMode) return;
@@ -57,11 +82,25 @@ export default function RichTextEditor({
     handleInput();
   };
 
-  const handleInput = () => {
-    if (editorRef.current) {
-      const html = editorRef.current.innerHTML;
-      setHtmlContent(html);
-      onChange(html);
+  const handleToggleCodeMode = () => {
+    if (showCodeMode) {
+      // Voltando para modo visual
+      setShowCodeMode(false);
+      lastHtmlRef.current = htmlContent;
+      onChange(htmlContent);
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.innerHTML = htmlContent;
+        }
+      }, 0);
+    } else {
+      // Indo para modo código HTML
+      if (editorRef.current) {
+        const current = editorRef.current.innerHTML;
+        lastHtmlRef.current = current;
+        setHtmlContent(current);
+      }
+      setShowCodeMode(true);
     }
   };
 
@@ -75,36 +114,48 @@ export default function RichTextEditor({
     setShowHighlightPicker(false);
   };
 
-  // Insert styled Alert Box into text
+  // Inserir Caixa de Alerta estilizada preservando a posição do cursor e permitindo digitação natural
   const insertAlertBox = (type: 'danger' | 'warning' | 'success' | 'info') => {
+    if (showCodeMode) return;
+    editorRef.current?.focus();
+
+    // Se o usuário selecionou texto antes de clicar no botão, coloca o texto dentro da caixa
+    const selection = typeof window !== 'undefined' ? window.getSelection() : null;
+    const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : '';
+
     let alertHtml = '';
     if (type === 'danger') {
+      const text = selectedText || 'Digite o aviso importante aqui...';
       alertHtml = `
         <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #991b1b;">
-          <strong>🚨 ATENÇÃO / REGRA CRÍTICA:</strong> Digite o aviso importante aqui...
+          <strong>🚨 ATENÇÃO / REGRA CRÍTICA:</strong> ${text}
         </div><p><br></p>
       `;
     } else if (type === 'warning') {
+      const text = selectedText || 'Digite a observação da esteira aqui...';
       alertHtml = `
         <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #92400e;">
-          <strong>⚠️ OBSERVAÇÃO / CUIDADO:</strong> Digite a observação da esteira aqui...
+          <strong>⚠️ OBSERVAÇÃO / CUIDADO:</strong> ${text}
         </div><p><br></p>
       `;
     } else if (type === 'success') {
+      const text = selectedText || 'Digite o passo a passo recomendado aqui...';
       alertHtml = `
         <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #166534;">
-          <strong>✅ DICA DE APROVAÇÃO:</strong> Digite o passo a passo recomendado aqui...
+          <strong>✅ DICA DE APROVAÇÃO:</strong> ${text}
         </div><p><br></p>
       `;
     } else {
+      const text = selectedText || 'Digite as regras gerais aqui...';
       alertHtml = `
         <div style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px 16px; border-radius: 8px; margin: 12px 0; color: #075985;">
-          <strong>ℹ️ INFORMAÇÃO BANCÁRIA:</strong> Digite as regras gerais aqui...
+          <strong>ℹ️ INFORMAÇÃO BANCÁRIA:</strong> ${text}
         </div><p><br></p>
       `;
     }
 
-    exec('insertHTML', alertHtml);
+    document.execCommand('insertHTML', false, alertHtml);
+    handleInput();
   };
 
   const colors = [
@@ -371,7 +422,7 @@ export default function RichTextEditor({
           </button>
           <button
             type="button"
-            onClick={() => setShowCodeMode(!showCodeMode)}
+            onClick={handleToggleCodeMode}
             className={`px-2.5 py-1 rounded-lg font-bold text-xs transition flex items-center space-x-1 ${
               showCodeMode ? 'bg-blue-700 text-white' : 'hover:bg-white text-slate-700'
             }`}
@@ -398,11 +449,11 @@ export default function RichTextEditor({
         <div
           ref={editorRef}
           contentEditable
+          suppressContentEditableWarning
           onInput={handleInput}
           onBlur={handleInput}
           className="min-h-[350px] max-h-[600px] overflow-y-auto p-5 text-sm sm:text-base text-slate-900 focus:outline-none leading-relaxed prose prose-slate max-w-none article-body"
           style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
-          dangerouslySetInnerHTML={{ __html: value || '' }}
           data-placeholder={placeholder}
         />
       )}

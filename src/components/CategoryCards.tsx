@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Building2, Sprout, BookOpen, Layers, Video } from 'lucide-react';
+import { Home, Layers, Video } from 'lucide-react';
 
 interface CategoryCardsProps {
   activeSlug?: string;
@@ -25,20 +25,6 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
       isDark: false,
     },
     {
-      name: 'CRÉDITO PJ & GIRO',
-      slug: 'credito-pj',
-      description: 'Capital de Giro, Pronampe, FGO e Antecipação de Recebíveis.',
-      icon: Building2,
-      isDark: false,
-    },
-    {
-      name: 'CRÉDITO AGRO',
-      slug: 'credito-agro',
-      description: 'Custeio agrícola/pecuário, CPR, Investimento, Moderfrota e Pronaf.',
-      icon: Sprout,
-      isDark: false,
-    },
-    {
       name: 'TREINAMENTOS E VIDEOAULAS',
       slug: 'treinamentos',
       description: 'Vídeos de treinamento, videoaulas e tutoriais operacionais.',
@@ -50,7 +36,7 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
   return (
     <section className={floating ? '-mt-4 sm:-mt-6 relative z-20 mb-8' : 'py-4'}>
       {/* Grid of Bevi-Ajuda Style Category Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isSelected = activeSlug === cat.slug || (!activeSlug && cat.slug === 'all');

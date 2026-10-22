@@ -8,8 +8,6 @@ async function check() {
     console.log('Seeding categories into Supabase...');
     const defaults = [
       { name: 'Crédito Imobiliário', slug: 'imobiliario', description: 'Financiamento habitacional, Home Equity, repasse bancário e regras de LTV.', icon: 'home' },
-      { name: 'Crédito PJ & Giro', slug: 'credito-pj', description: 'Capital de Giro, FGO, Pronampe, Antecipação de Recebíveis e Linhas de Garantia.', icon: 'building' },
-      { name: 'Crédito Agro', slug: 'credito-agro', description: 'Custeio agrícola/pecuário, CPR, Investimento, Moderfrota e Pronaf.', icon: 'sprout' },
       { name: 'Treinamentos e Videoaulas', slug: 'treinamentos', description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.', icon: 'video' },
     ];
     for (const c of defaults) {
@@ -38,8 +36,8 @@ async function check() {
     await prisma.heroBanner.create({
       data: {
         id: 'default-hero',
-        badgeText: 'Regras & Manuais Safra 2025/2026',
-        title: 'Hub de apoio Imobiliário, Crédito PJ & Agro',
+        badgeText: 'Regras & Manuais 2025/2026',
+        title: 'Hub de apoio Crédito Imobiliário',
         subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
         primaryButtonText: 'Ver Regras & Manuais',
         primaryButtonUrl: '/categorias/treinamentos',

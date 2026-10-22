@@ -10,25 +10,9 @@ const defaultCards = JSON.stringify([
     id: '1',
     title: 'Crédito Imobiliário',
     subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
-    url: '/categorias/credito-imobiliario',
+    url: '/categorias/imobiliario',
     icon: 'home',
     color: 'blue',
-  },
-  {
-    id: '2',
-    title: 'Crédito PJ & Capital de Giro',
-    subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
-    url: '/categorias/credito-pj',
-    icon: 'building',
-    color: 'emerald',
-  },
-  {
-    id: '3',
-    title: 'Crédito Agro & CPR',
-    subtitle: 'Custeio, Investimento e Financiamento Rural',
-    url: '/categorias/credito-agro',
-    icon: 'sprout',
-    color: 'cyan',
   },
 ]);
 
@@ -42,7 +26,7 @@ export async function GET() {
       banner = await prisma.heroBanner.create({
         data: {
           id: 'default-hero',
-          badgeText: 'Regras & Manuais Safra 2025/2026',
+          badgeText: 'Regras & Manuais 2025/2026',
           title: 'Como podemos te ajudar?',
           subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
           primaryButtonText: 'Ver Regras & Manuais',
@@ -103,7 +87,7 @@ export async function PUT(request: Request) {
     }
 
     const safeData = {
-      badgeText: String(badgeText ?? 'Regras & Manuais Safra 2025/2026'),
+      badgeText: String(badgeText ?? 'Regras & Manuais 2025/2026'),
       title: String(title ?? 'Como podemos te ajudar?'),
       subtitle: String(subtitle ?? ''),
       primaryButtonText: String(primaryButtonText ?? 'Ver Regras & Manuais'),

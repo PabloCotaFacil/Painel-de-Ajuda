@@ -7,13 +7,8 @@ import { getOrSeedCategories } from '@/lib/categories';
 import Link from 'next/link';
 import {
   Sparkles,
-  ArrowRight,
   Search,
   Info,
-  Home,
-  Building2,
-  Sprout,
-  BookOpen,
   ChevronRight,
   Layers,
 } from 'lucide-react';
@@ -39,9 +34,9 @@ export default async function HomePage({
   if (!heroBanner) {
     heroBanner = {
       id: 'default-hero',
-      badgeText: 'Regras & Manuais Safra 2025/2026',
+      badgeText: 'Regras & Manuais 2025/2026',
       title: 'Como podemos te ajudar?',
-      subtitle: 'Consulte esteiras operacionais, regras de crédito, downloads de PDFs e treinamentos atualizados.',
+      subtitle: 'Consulte esteiras operacionais, regras de crédito imobiliário, downloads de PDFs e treinamentos atualizados.',
       primaryButtonText: 'Ver Regras & Manuais',
       primaryButtonUrl: '/categorias/treinamentos',
       secondaryButtonText: null,
@@ -66,17 +61,24 @@ export default async function HomePage({
     Boolean(heroBanner.secondaryButtonUrl?.trim()) &&
     !isGestorOrAdminButton;
 
-  // Fetch latest articles
+  // Fetch latest articles (excluding removed PJ & Agro categories)
   const articles = await prisma.article.findMany({
-    where: query
-      ? {
-          OR: [
-            { title: { contains: query } },
-            { summary: { contains: query } },
-            { content: { contains: query } },
-          ],
-        }
-      : undefined,
+    where: {
+      category: {
+        slug: {
+          notIn: ['credito-pj', 'credito-agro'],
+        },
+      },
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query } },
+              { summary: { contains: query } },
+              { content: { contains: query } },
+            ],
+          }
+        : {}),
+    },
     include: {
       category: true,
       attachments: true,

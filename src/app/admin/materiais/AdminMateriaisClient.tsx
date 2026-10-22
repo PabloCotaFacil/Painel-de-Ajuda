@@ -92,7 +92,7 @@ export default function AdminMateriaisClient({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // Form State for Editable Hero Banner
-  const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais Safra 2025/2026');
+  const [bannerBadgeText, setBannerBadgeText] = useState('Regras & Manuais 2025/2026');
   const [bannerTitle, setBannerTitle] = useState('Como podemos te ajudar?');
   const [bannerSubtitle, setBannerSubtitle] = useState(
     'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.'
@@ -114,25 +114,9 @@ export default function AdminMateriaisClient({
       id: '1',
       title: 'Crédito Imobiliário',
       subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
-      url: '/categorias/credito-imobiliario',
+      url: '/categorias/imobiliario',
       icon: 'home',
       color: 'blue',
-    },
-    {
-      id: '2',
-      title: 'Crédito PJ & Capital de Giro',
-      subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
-      url: '/categorias/credito-pj',
-      icon: 'building',
-      color: 'emerald',
-    },
-    {
-      id: '3',
-      title: 'Crédito Agro & CPR',
-      subtitle: 'Custeio, Investimento e Financiamento Rural',
-      url: '/categorias/credito-agro',
-      icon: 'sprout',
-      color: 'cyan',
     },
   ]);
   const [savingBanner, setSavingBanner] = useState(false);
@@ -167,25 +151,9 @@ export default function AdminMateriaisClient({
         id: '1',
         title: 'Crédito Imobiliário',
         subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
-        url: '/categorias/credito-imobiliario',
+        url: '/categorias/imobiliario',
         icon: 'home',
         color: 'blue',
-      },
-      {
-        id: '2',
-        title: 'Crédito PJ & Capital de Giro',
-        subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
-        url: '/categorias/credito-pj',
-        icon: 'building',
-        color: 'emerald',
-      },
-      {
-        id: '3',
-        title: 'Crédito Agro & CPR',
-        subtitle: 'Custeio, Investimento e Financiamento Rural',
-        url: '/categorias/credito-agro',
-        icon: 'sprout',
-        color: 'cyan',
       },
     ]);
   };
@@ -1094,7 +1062,7 @@ export default function AdminMateriaisClient({
                       </label>
                       <input
                         type="text"
-                        placeholder="ex: Manual Operacional Safra 2026 Caixa.pdf"
+                        placeholder="ex: Manual Operacional 2026 Caixa.pdf"
                         value={linkDocName}
                         onChange={(e) => setLinkDocName(e.target.value)}
                         className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1234,7 +1202,7 @@ export default function AdminMateriaisClient({
                   </label>
                   <input
                     type="text"
-                    placeholder="ex: Regras & Manuais Safra 2025/2026"
+                    placeholder="ex: Regras & Manuais 2025/2026"
                     value={bannerBadgeText}
                     onChange={(e) => setBannerBadgeText(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"
@@ -1423,8 +1391,6 @@ export default function AdminMateriaisClient({
                                 className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                               >
                                 <option value="home">Imóvel (Casa)</option>
-                                <option value="building">Empresa (PJ)</option>
-                                <option value="sprout">Agro (Planta)</option>
                                 <option value="video">Vídeo</option>
                                 <option value="file">Documento</option>
                                 <option value="dollar">Cifrão ($)</option>
@@ -1487,7 +1453,7 @@ export default function AdminMateriaisClient({
                       </label>
                       <input
                         type="text"
-                        placeholder="ex: Treinamento Oficial Safra 2026"
+                        placeholder="ex: Treinamento Oficial 2026"
                         value={bannerVideoTitle}
                         onChange={(e) => setBannerVideoTitle(e.target.value)}
                         className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-cyan-500 focus:outline-none"

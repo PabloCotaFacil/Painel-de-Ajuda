@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Search, Home, BookOpen, Layers, Video } from 'lucide-react';
+import { Search, Home, Layers, Video } from 'lucide-react';
 
 export default function Header({ initialSearch = '' }: { initialSearch?: string }) {
   const [search, setSearch] = useState(initialSearch);
@@ -35,7 +35,7 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
               COTAFÁCIL
             </span>
             <span className="hidden sm:inline font-medium text-slate-600">
-              Hub de Apoio Operacional — Imobiliário, Crédito PJ & Agro
+              Hub de Apoio Operacional — Crédito Imobiliário
             </span>
           </div>
           <div className="text-slate-400 font-medium">
@@ -63,7 +63,7 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
               Hub de Apoio <span className="text-blue-600">Operacional</span>
             </span>
             <span className="text-[11px] text-slate-500 font-semibold tracking-wide">
-              Imobiliário • PJ & Giro • Agro
+              Crédito Imobiliário
             </span>
           </div>
         </Link>
@@ -72,7 +72,7 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
         <form onSubmit={handleSearchSubmit} className="w-full md:max-w-md relative">
           <input
             type="text"
-            placeholder="Busque por regras, taxas, LTV, CPR, manuais..."
+            placeholder="Busque por regras, taxas, LTV, manuais..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-4 pr-11 py-2.5 rounded-full bg-slate-100 text-slate-900 placeholder-slate-400 text-xs sm:text-sm border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-inner"
@@ -100,12 +100,6 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
           </Link>
           <Link href="/categorias/imobiliario" className="hover:text-blue-600 transition whitespace-nowrap shrink-0">
             🏡 Crédito Imobiliário
-          </Link>
-          <Link href="/categorias/credito-pj" className="hover:text-blue-600 transition whitespace-nowrap shrink-0">
-            🏢 Crédito PJ & Giro
-          </Link>
-          <Link href="/categorias/credito-agro" className="hover:text-blue-600 transition whitespace-nowrap shrink-0">
-            🌾 Crédito Agro
           </Link>
           <Link href="/categorias/treinamentos" className="hover:text-blue-600 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0">
             <Video className="w-3.5 h-3.5 text-rose-500 shrink-0" />

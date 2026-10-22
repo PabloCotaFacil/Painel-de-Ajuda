@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Percent, Trash2, Edit2, Shield, FileText, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Plus, Percent, Trash2, Edit2, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface TriggerTier {
   id?: string;
@@ -222,8 +222,6 @@ export default function AdminComissoesClient({
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
                 <option value="Crédito Imobiliário">Crédito Imobiliário</option>
-                <option value="Crédito PJ">Crédito PJ</option>
-                <option value="Crédito Agro">Crédito Agro</option>
               </select>
             </div>
 

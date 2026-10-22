@@ -15,24 +15,14 @@ export const DEFAULT_CATEGORIES: DefaultCategoryDef[] = [
     icon: 'home',
   },
   {
-    name: 'Crédito PJ & Giro',
-    slug: 'credito-pj',
-    description: 'Capital de Giro, FGO, Pronampe, Antecipação de Recebíveis e Linhas de Garantia.',
-    icon: 'building',
-  },
-  {
-    name: 'Crédito Agro',
-    slug: 'credito-agro',
-    description: 'Custeio agrícola/pecuário, CPR, Investimento, Moderfrota e Pronaf.',
-    icon: 'sprout',
-  },
-  {
     name: 'Treinamentos e Videoaulas',
     slug: 'treinamentos',
     description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.',
     icon: 'video',
   },
 ];
+
+const REMOVED_CATEGORY_SLUGS = ['credito-pj', 'credito-agro'];
 
 let cachedCategories: any[] | null = null;
 let lastCacheTime = 0;
@@ -50,6 +40,11 @@ export async function getOrSeedCategories() {
 
   try {
     let categories = await prisma.category.findMany({
+      where: {
+        slug: {
+          notIn: REMOVED_CATEGORY_SLUGS,
+        },
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -63,6 +58,11 @@ export async function getOrSeedCategories() {
       }
 
       categories = await prisma.category.findMany({
+        where: {
+          slug: {
+            notIn: REMOVED_CATEGORY_SLUGS,
+          },
+        },
         orderBy: { name: 'asc' },
       });
     } else {
@@ -78,6 +78,11 @@ export async function getOrSeedCategories() {
           },
         });
         categories = await prisma.category.findMany({
+          where: {
+            slug: {
+              notIn: REMOVED_CATEGORY_SLUGS,
+            },
+          },
           orderBy: { name: 'asc' },
         });
       }

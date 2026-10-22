@@ -38,27 +38,24 @@ const defaultCards: HeroCardItem[] = [
     id: '1',
     title: 'Crédito Imobiliário',
     subtitle: 'LTV, esteiras Caixa, Itaú, BB e Santander',
-    url: '/categorias/credito-imobiliario',
+    url: '/categorias/imobiliario',
     icon: 'home',
     color: 'blue',
   },
-  {
-    id: '2',
-    title: 'Crédito PJ & Capital de Giro',
-    subtitle: 'Pronampe, FGO e Antecipação de Recebíveis',
-    url: '/categorias/credito-pj',
-    icon: 'building',
-    color: 'emerald',
-  },
-  {
-    id: '3',
-    title: 'Crédito Agro & CPR',
-    subtitle: 'Custeio, Investimento e Financiamento Rural',
-    url: '/categorias/credito-agro',
-    icon: 'sprout',
-    color: 'cyan',
-  },
 ];
+
+function isRemovedPJOrAgroCard(card: HeroCardItem): boolean {
+  const text = `${card.title || ''} ${card.subtitle || ''} ${card.url || ''}`.toLowerCase();
+  return (
+    text.includes('credito-pj') ||
+    text.includes('credito-agro') ||
+    text.includes('crédito pj') ||
+    text.includes('credito pj') ||
+    text.includes('crédito agro') ||
+    text.includes('credito agro') ||
+    text.includes('capital de giro')
+  );
+}
 
 function getIconComponent(iconName?: string) {
   switch (iconName?.toLowerCase()) {
@@ -116,7 +113,10 @@ export default function HeroMedia({
     try {
       const parsed = JSON.parse(cardsJson);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        cards = parsed;
+        const filtered = parsed.filter((c: HeroCardItem) => !isRemovedPJOrAgroCard(c));
+        if (filtered.length > 0) {
+          cards = filtered;
+        }
       }
     } catch {
       // fallback to default

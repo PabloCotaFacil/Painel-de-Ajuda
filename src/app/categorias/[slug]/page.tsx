@@ -8,17 +8,30 @@ import { ArrowLeft, FolderOpen, Layers } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const REMOVED_CATEGORY_SLUGS = ['credito-pj', 'credito-agro'];
+
 export default async function CategoryPage({
   params,
 }: {
   params: { slug: string };
 }) {
+  if (REMOVED_CATEGORY_SLUGS.includes(params.slug)) {
+    notFound();
+  }
+
   // Garantir que as categorias padrão existam no banco caso esteja vazio
   await getOrSeedCategories();
 
   // Tratamento especial para "TODAS AS CATEGORIAS" (slug === 'all')
   if (params.slug === 'all') {
     const allArticles = await prisma.article.findMany({
+      where: {
+        category: {
+          slug: {
+            notIn: REMOVED_CATEGORY_SLUGS,
+          },
+        },
+      },
       include: {
         category: true,
         attachments: true,
@@ -47,7 +60,7 @@ export default async function CategoryPage({
           </div>
           <h1 className="text-3xl font-black text-slate-900">Todas as Categorias & Manuais</h1>
           <p className="text-slate-600 text-sm mt-2">
-            Visão geral de todos os materiais, regras de crédito, esteiras operacionais e treinamentos.
+            Visão geral de todos os materiais, regras de crédito imobiliário, esteiras operacionais e treinamentos.
           </p>
         </div>
 
@@ -75,7 +88,7 @@ export default async function CategoryPage({
     );
   }
 
-  let category = await prisma.category.findUnique({
+  const category = await prisma.category.findUnique({
     where: { slug: params.slug },
     include: {
       articles: {

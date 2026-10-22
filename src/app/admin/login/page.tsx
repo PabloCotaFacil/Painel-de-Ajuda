@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Lock, User, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { Lock, User, ArrowRight } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('');
@@ -41,8 +42,14 @@ export default function AdminLoginPage() {
     <div className="max-w-md mx-auto py-12 px-4">
       <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 card-shadow space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-blue-50 text-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-            <Shield className="w-7 h-7" />
+          <div className="flex justify-center mb-3">
+            <Image
+              src="/painel-icon.png"
+              alt="Painel Operacional CotaFácil"
+              width={64}
+              height={64}
+              className="w-16 h-16 object-contain drop-shadow-md"
+            />
           </div>
           <h1 className="text-2xl font-black text-slate-900">Acesso Administrativo</h1>
           <p className="text-xs text-slate-500">

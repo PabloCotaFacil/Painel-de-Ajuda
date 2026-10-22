@@ -51,11 +51,11 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
           <div className="flex items-center">
             <Image
               src="/cotafacil-logo.png"
-              alt="CotaFácil Soluções Financeiras"
-              width={160}
-              height={48}
+              alt="CotaFácil Painel Operacional"
+              width={180}
+              height={58}
               priority
-              className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-102"
+              className="h-11 sm:h-12 w-auto object-contain transition-transform group-hover:scale-102"
             />
           </div>
           <div className="hidden sm:block border-l border-slate-200 pl-3.5">

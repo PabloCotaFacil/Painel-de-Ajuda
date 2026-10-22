@@ -5,8 +5,13 @@ import Header from '@/components/Header';
 import NavigationProgressBar from '@/components/NavigationProgressBar';
 
 export const metadata: Metadata = {
-  title: 'Hub de Apoio Operacional | CotaFácil',
-  description: 'Portal de conhecimento, regras de crédito, esteiras operacionais e materiais de treinamento.',
+  title: 'Painel Operacional | CotaFácil',
+  description: 'Portal de conhecimento, regras de crédito imobiliário, esteiras operacionais e materiais de treinamento.',
+  icons: {
+    icon: '/painel-icon.png',
+    shortcut: '/painel-icon.png',
+    apple: '/painel-icon.png',
+  },
 };
 
 export default function RootLayout({
@@ -29,9 +34,9 @@ export default function RootLayout({
         <footer className="bg-slate-900 text-slate-400 text-xs py-8 border-t border-slate-800 mt-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              <p className="font-extrabold text-white text-sm">CotaFácil — Hub de Apoio Operacional</p>
+              <p className="font-extrabold text-white text-sm">CotaFácil — Painel Operacional</p>
               <p className="mt-1 text-slate-500">
-                Plataforma de regras de crédito, manuais operacionais e esteiras de atendimento.
+                Plataforma de regras de crédito imobiliário, manuais operacionais e esteiras de atendimento.
               </p>
             </div>
             <div className="text-slate-500 text-[11px]">

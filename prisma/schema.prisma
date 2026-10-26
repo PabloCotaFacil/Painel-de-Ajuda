@@ -89,6 +89,18 @@ model SystemConfig {
   value String
 }
 
+model ShortReel {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  videoUrl     String   // Link do YouTube Shorts (inclusive Não Listado) ou MP4
+  categoryTag  String?  @default("Treinamento Rápido")
+  order        Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model StoredFile {
   id        String   @id @default(uuid())
   name      String

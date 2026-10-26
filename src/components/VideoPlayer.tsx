@@ -18,6 +18,7 @@ export default function VideoPlayer({ url, title = 'Vídeo de Treinamento' }: Vi
   if (!url) return null;
 
   const trimmedUrl = url.trim();
+  const isShorts = trimmedUrl.includes('/shorts/') || trimmedUrl.includes('reel');
 
   // Helper to extract embed url
   const getEmbedUrl = (rawUrl: string): { type: 'iframe' | 'video'; src: string } => {
@@ -73,31 +74,45 @@ export default function VideoPlayer({ url, title = 'Vídeo de Treinamento' }: Vi
       <div className="bg-slate-900/90 px-4 py-2.5 flex items-center justify-between border-b border-slate-800 text-xs">
         <div className="flex items-center space-x-2 text-cyan-400 font-bold">
           <Video className="w-4 h-4" />
-          <span>Reprodutor de Treinamento Integrado</span>
+          <span>{isShorts ? 'Pílula Rápida / Reel Vertical' : 'Reprodutor de Treinamento Integrado'}</span>
         </div>
         <span className="text-[11px] text-slate-400 truncate max-w-xs">{title}</span>
       </div>
 
-      <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-        {embed.type === 'iframe' ? (
-          <iframe
-            src={embed.src}
-            title={title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        ) : (
-          <video
-            src={embed.src}
-            controls
-            playsInline
-            className="w-full h-full object-contain"
-            preload="metadata"
-          >
-            Seu navegador não suporta a reprodução deste formato de vídeo.
-          </video>
-        )}
+      <div
+        className={
+          isShorts
+            ? 'p-4 sm:p-6 bg-slate-950 flex items-center justify-center'
+            : 'relative w-full aspect-video bg-black flex items-center justify-center'
+        }
+      >
+        <div
+          className={
+            isShorts
+              ? 'relative w-full max-w-[340px] aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl'
+              : 'w-full h-full'
+          }
+        >
+          {embed.type === 'iframe' ? (
+            <iframe
+              src={embed.src}
+              title={title}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          ) : (
+            <video
+              src={embed.src}
+              controls
+              playsInline
+              className="w-full h-full object-contain"
+              preload="metadata"
+            >
+              Seu navegador não suporta a reprodução deste formato de vídeo.
+            </video>
+          )}
+        </div>
       </div>
     </div>
   );

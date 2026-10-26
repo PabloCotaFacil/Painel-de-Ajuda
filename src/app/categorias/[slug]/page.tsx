@@ -1,9 +1,11 @@
 import ArticleCard from '@/components/ArticleCard';
+import TreinamentosReelsFeed from '@/components/TreinamentosReelsFeed';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
+import { getActiveShortReels } from '@/lib/reels';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, FolderOpen, Layers } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Layers, Video } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -105,6 +107,29 @@ export default async function CategoryPage({
     notFound();
   }
 
+  const isTreinamentos = params.slug === 'treinamentos';
+  const shortReels = isTreinamentos ? await getActiveShortReels() : [];
+
+  // Coleta também os vídeos postados como Artigos na categoria Treinamentos para entrarem no Reel:
+  const articleReels = isTreinamentos
+    ? category.articles
+        .filter((art) => !!art.videoUrl)
+        .map((art) => ({
+          id: art.id,
+          title: art.title,
+          description: art.summary,
+          videoUrl: art.videoUrl!,
+          categoryTag: 'Treinamento Operacional',
+          order: 0,
+          isActive: true,
+        }))
+    : [];
+
+  // Junta todos os reels sem duplicatas por videoUrl
+  const reels = [...shortReels, ...articleReels].filter(
+    (item, index, self) => index === self.findIndex((t) => t.videoUrl === item.videoUrl)
+  );
+
   return (
     <div className="space-y-6">
       {/* Botão de Retornar para a Página Inicial */}
@@ -121,8 +146,12 @@ export default async function CategoryPage({
       {/* Category Header */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow">
         <div className="flex items-center space-x-3 text-blue-700 font-extrabold text-xs uppercase tracking-wider mb-2">
-          <FolderOpen className="w-4 h-4 text-cyan-500" />
-          <span>Categoria de Conhecimento</span>
+          {isTreinamentos ? (
+            <Video className="w-4 h-4 text-rose-500" />
+          ) : (
+            <FolderOpen className="w-4 h-4 text-cyan-500" />
+          )}
+          <span>{isTreinamentos ? 'Hub de Treinamentos & Pílulas Rápidas' : 'Categoria de Conhecimento'}</span>
         </div>
         <h1 className="text-3xl font-black text-slate-900">{category.name}</h1>
         {category.description && (
@@ -130,12 +159,31 @@ export default async function CategoryPage({
         )}
       </div>
 
-      {/* Articles List */}
-      <section className="space-y-4">
-        <div className="border-b border-slate-200 pb-2">
-          <h2 className="text-lg font-black text-slate-900">
-            Materiais em {category.name} ({category.articles.length})
-          </h2>
+      {/* FEED DE REELS (Exibido com destaque no topo para a categoria Treinamentos) */}
+      {isTreinamentos && reels.length > 0 && (
+        <section className="space-y-3">
+          <TreinamentosReelsFeed reels={reels} catalogSectionId="catalog-videoaulas" />
+        </section>
+      )}
+
+      {/* Articles / Video Lessons List */}
+      <section id="catalog-videoaulas" className="space-y-4 pt-4 scroll-mt-20">
+        <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              {isTreinamentos && <span className="text-red-600">📺</span>}
+              <span>
+                {isTreinamentos
+                  ? `Videoaulas & Treinamentos Completos no YouTube (${category.articles.length})`
+                  : `Materiais em ${category.name} (${category.articles.length})`}
+              </span>
+            </h2>
+            {isTreinamentos && (
+              <p className="text-xs text-slate-500 mt-0.5">
+                Acesse abaixo os tutoriais completos, esteiras operacionais de bancos e gravações passo a passo.
+              </p>
+            )}
+          </div>
         </div>
 
         {category.articles.length === 0 ? (

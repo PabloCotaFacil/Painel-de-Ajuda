@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import RichTextEditor from '@/components/RichTextEditor';
+import AdminReelsManager from '@/components/AdminReelsManager';
 
 interface Attachment {
   id?: string;
@@ -66,8 +67,8 @@ export default function AdminMateriaisClient({
 }) {
   const router = useRouter();
 
-  // Navigation tab state: 'list' (Materiais Disponíveis), 'editor' (Criar/Editar), 'banner' (Banner da Home), 'password' (Segurança)
-  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'banner' | 'password'>(
+  // Navigation tab state: 'list' (Materiais Disponíveis), 'editor' (Criar/Editar), 'banner' (Banner da Home), 'reels' (Pílulas Rápidas), 'password' (Segurança)
+  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'banner' | 'reels' | 'password'>(
     initialArticles.length > 0 ? 'list' : 'editor'
   );
 
@@ -669,6 +670,18 @@ export default function AdminMateriaisClient({
         >
           <Layout className="w-4 h-4" />
           <span>Banner da Home</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('reels')}
+          className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-2 transition ${
+            activeTab === 'reels'
+              ? 'bg-blue-700 text-white shadow-md'
+              : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-cyan-400" />
+          <span>⚡ Pílulas & Reels</span>
         </button>
 
         <button
@@ -1489,6 +1502,28 @@ export default function AdminMateriaisClient({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* TAB: GERENCIADOR DE REELS / PÍLULAS RÁPIDAS */}
+      {activeTab === 'reels' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+            <div>
+              <div className="flex items-center space-x-2 text-blue-700 text-xs font-extrabold uppercase tracking-wider mb-1">
+                <Sparkles className="w-4 h-4 text-cyan-500" />
+                <span>Gestão de Vídeos Verticais</span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900">
+                Pílulas Rápidas & Feed de Reels (Treinamentos)
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Gerencie os vídeos curtos de rolagem estilo Shorts que aparecem na aba &quot;Treinamentos e Videoaulas&quot;.
+              </p>
+            </div>
+          </div>
+
+          <AdminReelsManager />
         </div>
       )}
 

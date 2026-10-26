@@ -7,7 +7,6 @@ import {
   VolumeX,
   ChevronDown,
   ChevronUp,
-  Shuffle,
   Sparkles,
   ArrowDownCircle,
   Smartphone,
@@ -87,16 +86,6 @@ export default function TreinamentosReelsFeed({
   const handlePrev = () => {
     triggerSlide('down');
     setCurrentIndex((prev) => (prev - 1 + reels.length) % reels.length);
-  };
-
-  const handleRandom = () => {
-    if (reels.length <= 1) return;
-    let nextIdx: number;
-    do {
-      nextIdx = Math.floor(Math.random() * reels.length);
-    } while (nextIdx === currentIndex);
-    triggerSlide('up');
-    setCurrentIndex(nextIdx);
   };
 
   // Suporte a Touch Swipe no Celular (Arraste vertical tipo TikTok/Reels)
@@ -335,22 +324,15 @@ export default function TreinamentosReelsFeed({
             >
               <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
             </button>
-            <button
-              onClick={handleRandom}
-              title="Sortear Outra Dica Aleatória"
-              className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-slate-700 dark:text-slate-200 hover:text-purple-700 dark:hover:text-purple-400 flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-md hover:shadow-lg transition active:scale-95 group"
-            >
-              <Shuffle className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
-            </button>
           </div>
         </div>
 
         {/* BARRA DE NAVEGAÇÃO CLARA, GRANDE E ULTRA-INTUITIVA ABAIXO DO PLAYER (Ideal para Mobile e PC) */}
-        <div className="mt-5 w-full max-w-sm flex items-center justify-center gap-2">
+        <div className="mt-5 w-full max-w-xs flex items-center justify-center gap-3">
           {/* Botão Anterior */}
           <button
             onClick={handlePrev}
-            className="flex-1 max-w-[110px] py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-extrabold shadow-sm hover:shadow transition flex items-center justify-center space-x-1.5 active:scale-95"
+            className="flex-1 py-3 px-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-extrabold shadow-sm hover:shadow transition flex items-center justify-center space-x-1.5 active:scale-95"
             title="Vídeo Anterior"
           >
             <ChevronUp className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
@@ -365,16 +347,6 @@ export default function TreinamentosReelsFeed({
           >
             <span>Próximo Vídeo</span>
             <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-          </button>
-
-          {/* Botão Sortear */}
-          <button
-            onClick={handleRandom}
-            className="py-2.5 px-3.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-slate-200 dark:border-slate-700 text-xs font-extrabold shadow-sm hover:shadow transition flex items-center justify-center space-x-1 active:scale-95"
-            title="Sortear outro vídeo aleatório"
-          >
-            <Shuffle className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Sortear</span>
           </button>
         </div>
 

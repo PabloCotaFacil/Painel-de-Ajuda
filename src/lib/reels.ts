@@ -12,35 +12,8 @@ export interface ShortReelItem {
   updatedAt?: string | Date;
 }
 
-export const DEFAULT_SHORT_REELS: ShortReelItem[] = [
-  {
-    id: 'default-reel-1',
-    title: 'Regra de LTV no Financiamento Caixa: Evite Reprovações',
-    description: 'Dica rápida de 50 segundos explicando como compor a renda para atingir a cota máxima de 80% no SBPE.',
-    videoUrl: 'https://www.youtube.com/shorts/kJQP7kiw5Fk',
-    categoryTag: 'Crédito Imobiliário • Caixa',
-    order: 1,
-    isActive: true,
-  },
-  {
-    id: 'default-reel-2',
-    title: 'Matrícula do Imóvel: Ônus e Ações com menos de 30 dias',
-    description: 'A certidão com prazo vencido é a principal causa de pendência na esteira bancária. Veja como conferir.',
-    videoUrl: 'https://www.youtube.com/shorts/5qap5aO4i9A',
-    categoryTag: 'Documentação & Cartório',
-    order: 2,
-    isActive: true,
-  },
-  {
-    id: 'default-reel-3',
-    title: 'Comprovação de Renda: Extrato Bancário x IRPF',
-    description: 'Diferenças práticas de aceitação entre Caixa, Itaú e Santander para clientes PJ e autônomos.',
-    videoUrl: 'https://www.youtube.com/shorts/3JZ_D3ELwOQ',
-    categoryTag: 'Análise de Risco & Bancos',
-    order: 3,
-    isActive: true,
-  },
-];
+// Nenhum mock ou reel estático fake: somente o que o usuário cadastrar no sistema
+export const DEFAULT_SHORT_REELS: ShortReelItem[] = [];
 
 let isTableVerified = false;
 
@@ -62,7 +35,6 @@ async function ensureShortReelTable() {
     `);
     isTableVerified = true;
   } catch (err) {
-    // Se falhar (ex: restrição ou SQLite), ignora silenciosamente
     console.warn('Verificação de tabela ShortReel:', err);
   }
 }
@@ -76,14 +48,14 @@ export async function getActiveShortReels(): Promise<ShortReelItem[]> {
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
     });
 
-    if (reels && reels.length > 0) {
+    if (reels && Array.isArray(reels)) {
       return reels;
     }
 
-    return DEFAULT_SHORT_REELS;
+    return [];
   } catch (error) {
     console.error('Erro ao buscar reels no banco:', error);
-    return DEFAULT_SHORT_REELS;
+    return [];
   }
 }
 
@@ -95,13 +67,13 @@ export async function getAllShortReels(): Promise<ShortReelItem[]> {
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
     });
 
-    if (reels && reels.length > 0) {
+    if (reels && Array.isArray(reels)) {
       return reels;
     }
 
-    return DEFAULT_SHORT_REELS;
+    return [];
   } catch (error) {
     console.error('Erro ao buscar todos os reels:', error);
-    return DEFAULT_SHORT_REELS;
+    return [];
   }
 }

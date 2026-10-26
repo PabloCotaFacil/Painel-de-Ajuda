@@ -147,11 +147,11 @@ export default async function CategoryPage({
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow">
         <div className="flex items-center space-x-3 text-blue-700 font-extrabold text-xs uppercase tracking-wider mb-2">
           {isTreinamentos ? (
-            <Video className="w-4 h-4 text-rose-500" />
+            <Video className="w-4 h-4 text-blue-600" />
           ) : (
             <FolderOpen className="w-4 h-4 text-cyan-500" />
           )}
-          <span>{isTreinamentos ? 'Hub de Treinamentos & Pílulas Rápidas' : 'Categoria de Conhecimento'}</span>
+          <span>{isTreinamentos ? 'Treinamentos e Tutoriais' : 'Categoria de Conhecimento'}</span>
         </div>
         <h1 className="text-3xl font-black text-slate-900">{category.name}</h1>
         {category.description && (
@@ -159,7 +159,7 @@ export default async function CategoryPage({
         )}
       </div>
 
-      {/* FEED DE REELS (Exibido com destaque no topo para a categoria Treinamentos) */}
+      {/* FEED DE REELS (Exibido com destaque no topo para a categoria Treinamentos, apenas se houver vídeos cadastrados) */}
       {isTreinamentos && reels.length > 0 && (
         <section className="space-y-3">
           <TreinamentosReelsFeed reels={reels} catalogSectionId="catalog-videoaulas" />
@@ -170,17 +170,12 @@ export default async function CategoryPage({
       <section id="catalog-videoaulas" className="space-y-4 pt-4 scroll-mt-20">
         <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              {isTreinamentos && <span className="text-red-600">📺</span>}
-              <span>
-                {isTreinamentos
-                  ? `Videoaulas & Treinamentos Completos no YouTube (${category.articles.length})`
-                  : `Materiais em ${category.name} (${category.articles.length})`}
-              </span>
+            <h2 className="text-xl font-black text-slate-900">
+              {isTreinamentos ? 'Videoaulas e Tutoriais' : `Materiais em ${category.name}`}
             </h2>
             {isTreinamentos && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                Acesse abaixo os tutoriais completos, esteiras operacionais de bancos e gravações passo a passo.
+              <p className="text-xs text-slate-500 mt-1">
+                Acesse os tutoriais detalhados e treinamentos operacionais passo a passo.
               </p>
             )}
           </div>

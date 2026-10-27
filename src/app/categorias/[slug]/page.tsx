@@ -110,16 +110,23 @@ export default async function CategoryPage({
   const isTreinamentos = params.slug === 'treinamentos';
   const shortReels = isTreinamentos ? await getActiveShortReels() : [];
 
-  // Coleta também os vídeos postados como Artigos na categoria Treinamentos para entrarem no Reel:
+  // Coleta APENAS vídeos marcados como 'reel' (9:16 vertical) para entrarem no carrossel de pílulas do topo:
   const articleReels = isTreinamentos
     ? category.articles
-        .filter((art) => !!art.videoUrl)
+        .filter((art) => {
+          if (!art.videoUrl) return false;
+          const vType = (art as any).videoType;
+          if (vType === 'reel') return true;
+          if (vType === 'training') return false;
+          // Se não especificado, checa se a URL é do Shorts
+          return art.videoUrl.includes('/shorts/') || art.videoUrl.includes('reel');
+        })
         .map((art) => ({
           id: art.id,
           title: art.title,
           description: art.summary,
           videoUrl: art.videoUrl!,
-          categoryTag: 'Treinamento Operacional',
+          categoryTag: art.category?.name || 'Dica Rápida',
           order: 0,
           isActive: true,
         }))
@@ -131,13 +138,14 @@ export default async function CategoryPage({
   );
 
   // Lista de materiais a exibir na grade inferior:
-  // REGRA: O que aparece como reel/pílula NÃO deve aparecer como treinamento aqui embaixo
+  // Mostra todas as Videoaulas Completas (16:9), apostilas, PDFs e artigos.
+  // Exclui apenas o que estiver no feed de Reels do topo para não duplicar.
   const displayedArticles = isTreinamentos
     ? category.articles.filter((art) => {
-        const isInReels = reels.some(
+        const isReel = reels.some(
           (r) => r.id === art.id || (art.videoUrl && r.videoUrl === art.videoUrl)
         );
-        return !isInReels;
+        return !isReel;
       })
     : category.articles;
 

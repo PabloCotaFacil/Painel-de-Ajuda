@@ -14,18 +14,22 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { title, summary, content, categoryId, attachments, videoUrl } = body;
+    const { title, summary, content, categoryId, attachments, videoUrl, videoType } = body;
 
     // Remove old attachments
     await prisma.attachment.deleteMany({ where: { articleId: params.id } });
 
-    const article = await prisma.article.update({
+    const cleanVideoUrl = videoUrl ? videoUrl.trim() : null;
+    const finalVideoType = cleanVideoUrl ? (videoType || (cleanVideoUrl.includes('/shorts/') ? 'reel' : 'training')) : null;
+
+    const article = await (prisma as any).article.update({
       where: { id: params.id },
       data: {
         title,
         summary,
         content,
-        videoUrl: videoUrl ? videoUrl.trim() : null,
+        videoUrl: cleanVideoUrl,
+        videoType: finalVideoType,
         categoryId,
         attachments: {
           create: attachments?.map((att: { name: string; fileUrl: string }) => ({
@@ -58,9 +62,12 @@ export async function DELETE(
   }
 
   try {
+    await prisma.attachment.deleteMany({ where: { articleId: params.id } });
     await prisma.article.delete({ where: { id: params.id } });
+
     revalidatePath('/');
     revalidatePath('/categorias/[slug]', 'page');
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Erro ao deletar artigo' }, { status: 500 });

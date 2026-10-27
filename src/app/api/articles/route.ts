@@ -11,18 +11,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, summary, content, categoryId, attachments, videoUrl } = body;
+    const { title, summary, content, categoryId, attachments, videoUrl, videoType } = body;
 
     if (!title || !summary || !content || !categoryId) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios' }, { status: 400 });
     }
 
-    const article = await prisma.article.create({
+    const cleanVideoUrl = videoUrl ? videoUrl.trim() : null;
+    const finalVideoType = cleanVideoUrl ? (videoType || (cleanVideoUrl.includes('/shorts/') ? 'reel' : 'training')) : null;
+
+    const article = await (prisma as any).article.create({
       data: {
         title,
         summary,
         content,
-        videoUrl: videoUrl ? videoUrl.trim() : null,
+        videoUrl: cleanVideoUrl,
+        videoType: finalVideoType,
         categoryId,
         attachments: {
           create: attachments?.map((att: { name: string; fileUrl: string }) => ({

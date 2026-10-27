@@ -53,6 +53,7 @@ interface Article {
   summary: string;
   content: string;
   videoUrl?: string | null;
+  videoType?: 'reel' | 'training' | null;
   categoryId: string;
   category: Category;
   attachments: Attachment[];
@@ -85,6 +86,7 @@ export default function AdminMateriaisClient({
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoType, setVideoType] = useState<'reel' | 'training'>('training');
   const [categoryId, setCategoryId] = useState(initialCategories[0]?.id || '');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [linkDocName, setLinkDocName] = useState('');
@@ -350,6 +352,7 @@ export default function AdminMateriaisClient({
     setSummary('');
     setContent('');
     setVideoUrl('');
+    setVideoType('training');
     setCategoryId(categories[0]?.id || '');
     setAttachments([]);
     setLinkDocName('');
@@ -364,6 +367,11 @@ export default function AdminMateriaisClient({
     setSummary(art.summary);
     setContent(art.content);
     setVideoUrl(art.videoUrl || '');
+    setVideoType(
+      art.videoType === 'reel' || (art.videoUrl?.includes('/shorts/') && art.videoType !== 'training')
+        ? 'reel'
+        : 'training'
+    );
     setCategoryId(art.categoryId);
     setAttachments(art.attachments.map((a) => ({ name: a.name, fileUrl: a.fileUrl })));
     setActiveTab('editor');
@@ -506,6 +514,7 @@ export default function AdminMateriaisClient({
       summary,
       content,
       videoUrl: videoUrl.trim() || null,
+      videoType: videoUrl.trim() ? videoType : null,
       categoryId: targetCategoryId,
       attachments,
     };
@@ -803,9 +812,17 @@ export default function AdminMateriaisClient({
                         {art.category?.name || 'Geral'}
                       </span>
                       {art.videoUrl && (
-                        <span className="text-[10px] font-extrabold text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          <Video className="w-3 h-3 text-rose-600" />
-                          <span>Vídeo Integrado</span>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                          art.videoType === 'reel' || art.videoUrl.includes('/shorts/')
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}>
+                          <Video className="w-3 h-3" />
+                          <span>
+                            {art.videoType === 'reel' || art.videoUrl.includes('/shorts/')
+                              ? '📱 Reel (9:16)'
+                              : '📺 Videoaula (16:9)'}
+                          </span>
                         </span>
                       )}
                       {art.attachments.length > 0 && (
@@ -966,9 +983,83 @@ export default function AdminMateriaisClient({
                 type="url"
                 placeholder="ex: https://www.youtube.com/watch?v=... ou https://youtu.be/... ou Vimeo / Google Drive"
                 value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setVideoUrl(val);
+                  if (val.includes('/shorts/') && videoType !== 'reel') {
+                    setVideoType('reel');
+                  }
+                }}
                 className="w-full px-4 py-2.5 bg-white border border-rose-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
+
+              {/* SELEÇÃO DO FORMATO: REEL (9:16) OU VIDEOAULA COMPLETA (16:9) */}
+              {videoUrl.trim() && (
+                <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-sm space-y-2.5 mt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                      Formato do Vídeo &bull; Onde deve aparecer? *
+                    </label>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                      Escolha Obrigatória
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Opção 1: Reel / Dica Rápida */}
+                    <button
+                      type="button"
+                      onClick={() => setVideoType('reel')}
+                      className={`p-3.5 rounded-xl border-2 text-left transition flex items-start space-x-3 ${
+                        videoType === 'reel'
+                          ? 'border-blue-600 bg-blue-50/80 shadow-sm'
+                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-2xl shrink-0">📱</span>
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <p className={`text-xs font-black ${videoType === 'reel' ? 'text-blue-700' : 'text-slate-800'}`}>
+                            Reel / Dica Rápida (9:16)
+                          </p>
+                          {videoType === 'reel' && (
+                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          Vídeo vertical curto. Aparece no <strong>Feed de Reels no topo</strong> de Treinamentos.
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Opção 2: Videoaula Completa */}
+                    <button
+                      type="button"
+                      onClick={() => setVideoType('training')}
+                      className={`p-3.5 rounded-xl border-2 text-left transition flex items-start space-x-3 ${
+                        videoType === 'training'
+                          ? 'border-blue-600 bg-blue-50/80 shadow-sm'
+                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-2xl shrink-0">📺</span>
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <p className={`text-xs font-black ${videoType === 'training' ? 'text-blue-700' : 'text-slate-800'}`}>
+                            Videoaula Completa (16:9)
+                          </p>
+                          {videoType === 'training' && (
+                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          Vídeo longo horizontal. Aparece na grade de <strong>Videoaulas e Tutoriais abaixo</strong>.
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* LIVE PLAYER PREVIEW RIGHT INSIDE ADMIN */}
               {videoUrl.trim() && (

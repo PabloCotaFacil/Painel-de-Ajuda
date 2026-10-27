@@ -39,6 +39,13 @@ export async function getOrSeedCategories() {
   }
 
   try {
+    // Garante que a coluna videoType exista na tabela Article para diferenciar Reels (9:16) de Treinamentos (16:9)
+    try {
+      await (prisma as any).$executeRawUnsafe(`
+        ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
+      `);
+    } catch (_) {}
+
     let categories = await prisma.category.findMany({
       where: {
         slug: {

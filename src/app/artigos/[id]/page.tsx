@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, FileText, Download, Calendar, Video } from 'lucide-react';
+import { ArrowLeft, Calendar, Video } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import AdminArticleEditButton from '@/components/AdminArticleEditButton';
 import ArticleAttachments from '@/components/ArticleAttachments';
@@ -32,13 +32,15 @@ export default async function ArticleDetailPage({
     year: 'numeric',
   });
 
+  const videoType = (article as any).videoType || 'training';
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Top Navigation & Admin Edit Button */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`/categorias/${article.category.slug}`}
-          className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 hover:text-blue-700 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm transition"
+          className="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para {article.category.name}</span>
@@ -48,16 +50,18 @@ export default async function ArticleDetailPage({
       </div>
 
       {/* Main Article Header Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 card-shadow space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 card-shadow space-y-6 transition-colors">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-blue-100 text-blue-800 uppercase">
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 uppercase">
               {article.category.name}
             </span>
             {article.videoUrl && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
                 <Video className="w-3.5 h-3.5" />
-                <span>Vídeo Aula / Treinamento</span>
+                <span>
+                  {videoType === 'reel' ? 'Pílula Rápida (9:16)' : 'Treinamento Completo (16:9)'}
+                </span>
               </span>
             )}
           </div>
@@ -67,19 +71,19 @@ export default async function ArticleDetailPage({
           </div>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight">
           {article.title}
         </h1>
 
-        <div className="bg-slate-50 border-l-4 border-cyan-500 p-4 rounded-r-2xl">
-          <p className="text-sm font-semibold text-slate-700 leading-relaxed">
+        <div className="bg-slate-50 dark:bg-slate-800/60 border-l-4 border-cyan-500 p-4 rounded-r-2xl">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
             {article.summary}
           </p>
         </div>
 
         {/* Video Player Section if article has video */}
         {article.videoUrl && (
-          <VideoPlayer url={article.videoUrl} title={article.title} />
+          <VideoPlayer url={article.videoUrl} title={article.title} videoType={videoType} />
         )}
 
         {/* Downloadable & Viewable PDF attachments section */}
@@ -90,11 +94,11 @@ export default async function ArticleDetailPage({
         {/* Formatted Content Body */}
         {article.content.includes('<') && article.content.includes('>') ? (
           <div
-            className="prose prose-slate max-w-none text-slate-800 text-sm sm:text-base leading-relaxed pt-4 border-t border-slate-100 article-body"
+            className="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed pt-4 border-t border-slate-100 dark:border-slate-800 article-body"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
         ) : (
-          <div className="prose prose-slate max-w-none text-slate-800 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-4 border-t border-slate-100 article-body">
+          <div className="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-4 border-t border-slate-100 dark:border-slate-800 article-body">
             {article.content}
           </div>
         )}

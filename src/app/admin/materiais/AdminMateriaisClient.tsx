@@ -24,16 +24,14 @@ import {
   BookOpen,
   FolderOpen,
   ArrowRight,
-  Home,
-  Building2,
-  Sprout,
-  DollarSign,
-  Play,
   RefreshCw,
+  MonitorPlay,
+  Smartphone,
 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import RichTextEditor from '@/components/RichTextEditor';
 import AdminReelsManager from '@/components/AdminReelsManager';
+import { smartSearchArticles } from '@/lib/search';
 
 interface Attachment {
   id?: string;
@@ -59,6 +57,8 @@ interface Article {
   attachments: Attachment[];
 }
 
+type MaterialKind = 'training_16_9' | 'reel_9_16' | 'manual_pdf';
+
 export default function AdminMateriaisClient({
   initialCategories,
   initialArticles,
@@ -76,12 +76,14 @@ export default function AdminMateriaisClient({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [togglingVideoTypeId, setTogglingVideoTypeId] = useState<string | null>(null);
 
   // Search and filter in articles list
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
   // Form State for Article
+  const [materialKind, setMaterialKind] = useState<MaterialKind>('training_16_9');
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
@@ -123,6 +125,25 @@ export default function AdminMateriaisClient({
     },
   ]);
   const [savingBanner, setSavingBanner] = useState(false);
+
+  const handleSelectMaterialKind = (kind: MaterialKind) => {
+    setMaterialKind(kind);
+    if (kind === 'training_16_9') {
+      setVideoType('training');
+      const treinamentosCat = categories.find((c) => c.slug === 'treinamentos');
+      if (treinamentosCat) {
+        setCategoryId(treinamentosCat.id);
+      }
+    } else if (kind === 'reel_9_16') {
+      setVideoType('reel');
+      const treinamentosCat = categories.find((c) => c.slug === 'treinamentos');
+      if (treinamentosCat) {
+        setCategoryId(treinamentosCat.id);
+      }
+    } else {
+      setVideoType('training');
+    }
+  };
 
   const handleAddBannerCard = () => {
     setBannerCards((prev) => [
@@ -348,12 +369,14 @@ export default function AdminMateriaisClient({
 
   const resetForm = () => {
     setEditingArticleId(null);
+    setMaterialKind('training_16_9');
     setTitle('');
     setSummary('');
     setContent('');
     setVideoUrl('');
     setVideoType('training');
-    setCategoryId(categories[0]?.id || '');
+    const treinamentosCat = categories.find((c) => c.slug === 'treinamentos');
+    setCategoryId(treinamentosCat?.id || categories[0]?.id || '');
     setAttachments([]);
     setLinkDocName('');
     setLinkDocUrl('');
@@ -367,15 +390,65 @@ export default function AdminMateriaisClient({
     setSummary(art.summary);
     setContent(art.content);
     setVideoUrl(art.videoUrl || '');
-    setVideoType(
-      art.videoType === 'reel' || (art.videoUrl?.includes('/shorts/') && art.videoType !== 'training')
-        ? 'reel'
-        : 'training'
-    );
+    const isReelVideo =
+      art.videoType === 'reel' ||
+      (art.videoUrl?.includes('/shorts/') && art.videoType !== 'training');
+
+    setVideoType(isReelVideo ? 'reel' : 'training');
+    if (!art.videoUrl) {
+      setMaterialKind('manual_pdf');
+    } else if (isReelVideo) {
+      setMaterialKind('reel_9_16');
+    } else {
+      setMaterialKind('training_16_9');
+    }
     setCategoryId(art.categoryId);
     setAttachments(art.attachments.map((a) => ({ name: a.name, fileUrl: a.fileUrl })));
     setActiveTab('editor');
     window.scrollTo({ top: 120, behavior: 'smooth' });
+  };
+
+  // Troca rápida de 1 clique entre Treinamento 16:9 e Reel 9:16 direto na lista
+  const handleQuickToggleVideoType = async (art: Article) => {
+    const currentIsReel =
+      art.videoType === 'reel' ||
+      (art.videoUrl?.includes('/shorts/') && art.videoType !== 'training');
+    const nextType: 'reel' | 'training' = currentIsReel ? 'training' : 'reel';
+
+    setTogglingVideoTypeId(art.id);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/articles/${art.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoType: nextType }),
+      });
+
+      const updated = await res.json();
+      if (res.ok) {
+        setArticles((prev) =>
+          prev.map((a) => (a.id === art.id ? { ...a, videoType: nextType } : a))
+        );
+        setMessage({
+          type: 'success',
+          text:
+            nextType === 'training'
+              ? `"${art.title}" agora está configurado como Treinamento Completo (16:9) e aparece logo abaixo dos Reels!`
+              : `"${art.title}" agora está configurado como Pílula Rápida / Reel (9:16) no topo de Treinamentos!`,
+        });
+        router.refresh();
+      } else {
+        setMessage({
+          type: 'error',
+          text: updated?.error || 'Erro ao alterar formato do vídeo.',
+        });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Erro de conexão ao alterar formato do vídeo.' });
+    } finally {
+      setTogglingVideoTypeId(null);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -403,7 +476,6 @@ export default function AdminMateriaisClient({
     }
 
     try {
-      // Divide o arquivo em pedaços de 1.5MB (passa com folga pelo limite de 4.5MB da Vercel)
       const CHUNK_SIZE = 1.5 * 1024 * 1024;
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
       const uploadId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -503,18 +575,29 @@ export default function AdminMateriaisClient({
       return;
     }
 
-    if (!content.trim()) {
-      setMessage({ type: 'error', text: 'Preencha o conteúdo das regras antes de salvar.' });
+    if ((materialKind === 'training_16_9' || materialKind === 'reel_9_16') && !videoUrl.trim()) {
+      setMessage({
+        type: 'error',
+        text: 'Informe o link do vídeo do YouTube/Vimeo/Drive ou mude o tipo de material para "Manual / Regra / PDF".',
+      });
       setSaving(false);
       return;
     }
 
+    // Se o usuário estiver subindo um vídeo e deixou o conteúdo detalhado em branco, usa o resumo automaticamente
+    const finalContent = content.trim() ? content : `<p>${summary.trim()}</p>`;
+    const finalVideoType = videoUrl.trim()
+      ? materialKind === 'reel_9_16'
+        ? 'reel'
+        : videoType
+      : null;
+
     const payload = {
       title,
       summary,
-      content,
+      content: finalContent,
       videoUrl: videoUrl.trim() || null,
-      videoType: videoUrl.trim() ? videoType : null,
+      videoType: finalVideoType,
       categoryId: targetCategoryId,
       attachments,
     };
@@ -531,11 +614,18 @@ export default function AdminMateriaisClient({
 
       const data = await res.json();
       if (res.ok) {
+        const destinationLabel =
+          finalVideoType === 'reel'
+            ? 'no Feed de Reels (9:16) no topo de Treinamentos'
+            : finalVideoType === 'training'
+            ? 'na seção de Treinamentos Completos (16:9) logo abaixo dos Reels'
+            : 'no portal';
+
         setMessage({
           type: 'success',
           text: editingArticleId
-            ? 'Material atualizado com sucesso no site!'
-            : 'Novo material publicado com sucesso no site!',
+            ? `Material atualizado com sucesso (${destinationLabel})!`
+            : `Novo material publicado com sucesso ${destinationLabel}!`,
         });
 
         // Update local articles state
@@ -584,15 +674,13 @@ export default function AdminMateriaisClient({
     router.refresh();
   };
 
-  // Filter articles based on search and category
-  const filteredArticles = articles.filter((art) => {
-    const matchesSearch =
-      art.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      art.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategoryFilter === 'all' || art.categoryId === selectedCategoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  // Filtra artigos pela categoria e aplica busca inteligente multi-termos
+  const categoryFiltered = articles.filter(
+    (art) => selectedCategoryFilter === 'all' || art.categoryId === selectedCategoryFilter
+  );
+  const filteredArticles = searchTerm.trim()
+    ? smartSearchArticles(categoryFiltered, searchTerm)
+    : categoryFiltered;
 
   return (
     <div className="space-y-6">
@@ -664,7 +752,7 @@ export default function AdminMateriaisClient({
           ) : (
             <>
               <Plus className="w-4 h-4" />
-              <span>Publicar Novo Material</span>
+              <span>Subir Novo Material / Vídeo</span>
             </>
           )}
         </button>
@@ -690,7 +778,7 @@ export default function AdminMateriaisClient({
           }`}
         >
           <Sparkles className="w-4 h-4 text-cyan-400" />
-          <span>⚡ Pílulas & Reels</span>
+          <span>⚡ Pílulas & Reels (9:16)</span>
         </button>
 
         <button
@@ -731,10 +819,10 @@ export default function AdminMateriaisClient({
             <div>
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-700" />
-                Materiais Cadastrados no Sistema ({articles.length})
+                Materiais & Treinamentos Cadastrados ({articles.length})
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Aqui você pode visualizar, editar ou excluir qualquer regra, PDF ou treinamento já publicado.
+                Visualize, edite ou alterne com 1 clique se um vídeo deve aparecer em <strong>Treinamento Completo (16:9)</strong> ou <strong>Reel (9:16)</strong>.
               </p>
             </div>
 
@@ -746,7 +834,7 @@ export default function AdminMateriaisClient({
               className="inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition shadow shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Criar Novo Material</span>
+              <span>Subir Novo Material / Vídeo</span>
             </button>
           </div>
 
@@ -755,7 +843,7 @@ export default function AdminMateriaisClient({
             <div className="sm:col-span-2 relative">
               <input
                 type="text"
-                placeholder="Buscar material por título, palavras-chave ou regras..."
+                placeholder="Pesquisa inteligente por 1 ou vários termos (título, resumo, PDF, categoria)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -801,80 +889,128 @@ export default function AdminMateriaisClient({
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredArticles.map((art) => (
-                <div
-                  key={art.id}
-                  className="p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-300 bg-slate-50/50 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 flex-wrap gap-1">
-                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 uppercase">
-                        {art.category?.name || 'Geral'}
-                      </span>
-                      {art.videoUrl && (
-                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
-                          art.videoType === 'reel' || art.videoUrl.includes('/shorts/')
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-rose-100 text-rose-700'
-                        }`}>
-                          <Video className="w-3 h-3" />
-                          <span>
-                            {art.videoType === 'reel' || art.videoUrl.includes('/shorts/')
-                              ? '📱 Reel (9:16)'
-                              : '📺 Videoaula (16:9)'}
+              {filteredArticles.map((art) => {
+                const isReel =
+                  art.videoType === 'reel' ||
+                  (art.videoUrl?.includes('/shorts/') && art.videoType !== 'training');
+                return (
+                  <div
+                    key={art.id}
+                    className="p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-300 bg-slate-50/50 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 flex-wrap gap-1">
+                        <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 uppercase">
+                          {art.category?.name || 'Geral'}
+                        </span>
+                        {art.videoUrl ? (
+                          <span
+                            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                              isReel
+                                ? 'bg-cyan-100 text-cyan-900 border border-cyan-300'
+                                : 'bg-rose-100 text-rose-800 border border-rose-300'
+                            }`}
+                          >
+                            <Video className="w-3 h-3" />
+                            <span>
+                              {isReel
+                                ? '📱 Reel Vertical (9:16) • Topo'
+                                : '📺 Treinamento Padrão (16:9) • Abaixo dos Reels'}
+                            </span>
                           </span>
-                        </span>
-                      )}
-                      {art.attachments.length > 0 && (
-                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                          {art.attachments.length} PDF(s)
-                        </span>
-                      )}
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-200/80 px-2.5 py-0.5 rounded-full">
+                            📄 Manual / Regra
+                          </span>
+                        )}
+                        {art.attachments.length > 0 && (
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            {art.attachments.length} PDF(s)
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">
+                        {art.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{art.summary}</p>
                     </div>
 
-                    <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-snug">
-                      {art.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{art.summary}</p>
+                    {/* Action Buttons: QUICK FORMAT TOGGLE, EDIT, VIEW, DELETE */}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 self-end md:self-center">
+                      {art.videoUrl && (
+                        <button
+                          type="button"
+                          disabled={togglingVideoTypeId === art.id}
+                          onClick={() => handleQuickToggleVideoType(art)}
+                          className={`px-3 py-2 rounded-xl text-xs font-extrabold border transition flex items-center space-x-1.5 ${
+                            isReel
+                              ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                              : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border-cyan-200'
+                          }`}
+                          title={
+                            isReel
+                              ? 'Mover este vídeo para a seção de Treinamentos Completos (16:9) abaixo dos Reels'
+                              : 'Mover este vídeo para o player vertical de Reels (9:16)'
+                          }
+                        >
+                          {isReel ? (
+                            <>
+                              <MonitorPlay className="w-3.5 h-3.5" />
+                              <span>
+                                {togglingVideoTypeId === art.id
+                                  ? 'Movendo...'
+                                  : 'Mudar p/ Treinamento 16:9'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Smartphone className="w-3.5 h-3.5" />
+                              <span>
+                                {togglingVideoTypeId === art.id
+                                  ? 'Movendo...'
+                                  : 'Mudar p/ Reel 9:16'}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      <Link
+                        href={`/artigos/${art.id}`}
+                        target="_blank"
+                        className="p-2 sm:px-3 sm:py-2 text-slate-700 hover:text-blue-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center space-x-1"
+                        title="Ver no site"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Ver</span>
+                      </Link>
+
+                      <button
+                        onClick={() => handleEditClick(art)}
+                        className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-extrabold transition flex items-center space-x-1.5 shadow-sm"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Editar</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(art.id, art.title)}
+                        className="p-2 sm:px-3 sm:py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 hover:border-rose-300 rounded-xl text-xs font-bold transition flex items-center space-x-1"
+                        title="Excluir material"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Action Buttons: EDIT, VIEW, DELETE */}
-                  <div className="flex items-center space-x-2 shrink-0 self-end md:self-center">
-                    <Link
-                      href={`/artigos/${art.id}`}
-                      target="_blank"
-                      className="p-2 sm:px-3 sm:py-2 text-slate-700 hover:text-blue-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center space-x-1"
-                      title="Ver no site"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Ver no Site</span>
-                    </Link>
-
-                    <button
-                      onClick={() => handleEditClick(art)}
-                      className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-extrabold transition flex items-center space-x-1.5 shadow-sm"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>Editar Material</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(art.id, art.title)}
-                      className="p-2 sm:px-3 sm:py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 hover:border-rose-300 rounded-xl text-xs font-bold transition flex items-center space-x-1"
-                      title="Excluir material"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Excluir</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
-      {/* TAB 2: FORMULÁRIO DE CRIAR / EDITAR MATERIAL COM RICH TEXT EDITOR */}
+      {/* TAB 2: FORMULÁRIO DE CRIAR / EDITAR MATERIAL COM SELETOR DE TIPO NO TOPO */}
       {activeTab === 'editor' && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -892,7 +1028,7 @@ export default function AdminMateriaisClient({
               </div>
               <h2 className="text-xl font-black text-slate-900 mt-1 flex items-center gap-2">
                 {editingArticleId ? <Edit2 className="w-5 h-5 text-amber-600" /> : <Plus className="w-5 h-5 text-blue-700" />}
-                {editingArticleId ? `Editando: ${title || 'Material Selecionado'}` : 'Publicar Novo Material / Treinamento'}
+                {editingArticleId ? `Editando: ${title || 'Material Selecionado'}` : 'Subir Novo Material / Treinamento'}
               </h2>
             </div>
 
@@ -917,9 +1053,116 @@ export default function AdminMateriaisClient({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* PASSO 1: ESCOLHA DO TIPO DE MATERIAL E ONDE ELE VAI APARECER */}
+            <div className="bg-slate-50 p-5 rounded-2xl border-2 border-blue-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <label className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center font-black">
+                    1
+                  </span>
+                  <span>Qual tipo de material você está subindo? (Define onde vai aparecer) *</span>
+                </label>
+                <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
+                  Diferenciação Automática
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
+                {/* Opção A: Treinamento Completo 16:9 */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMaterialKind('training_16_9')}
+                  className={`p-4 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
+                    materialKind === 'training_16_9'
+                      ? 'border-rose-600 bg-rose-50/90 shadow-md ring-2 ring-rose-500/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black text-rose-700 bg-rose-100 px-2.5 py-1 rounded-lg">
+                        <MonitorPlay className="w-4 h-4" />
+                        <span>Vídeo 16:9 (Horizontal)</span>
+                      </span>
+                      {materialKind === 'training_16_9' && (
+                        <CheckCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-sm font-black text-slate-900 pt-1">
+                      📺 Treinamento Padrão (16:9)
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Videoaula completa em tela horizontal. Vai para a aba de Treinamentos <strong>logo abaixo do campo de Reels</strong>.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Opção B: Reel Vertical 9:16 */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMaterialKind('reel_9_16')}
+                  className={`p-4 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
+                    materialKind === 'reel_9_16'
+                      ? 'border-cyan-600 bg-cyan-50/90 shadow-md ring-2 ring-cyan-500/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black text-cyan-800 bg-cyan-100 px-2.5 py-1 rounded-lg">
+                        <Smartphone className="w-4 h-4" />
+                        <span>Vídeo 9:16 (Vertical)</span>
+                      </span>
+                      {materialKind === 'reel_9_16' && (
+                        <CheckCircle className="w-4 h-4 text-cyan-600 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-sm font-black text-slate-900 pt-1">
+                      📱 Reel / Pílula Rápida (9:16)
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Vídeo curto em pé (YouTube Shorts). Vai para o <strong>Player de Reels no canto superior</strong> de Treinamentos.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Opção C: Manual / Regra / PDF */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMaterialKind('manual_pdf')}
+                  className={`p-4 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
+                    materialKind === 'manual_pdf'
+                      ? 'border-blue-600 bg-blue-50/90 shadow-md ring-2 ring-blue-500/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-1 rounded-lg">
+                        <FileText className="w-4 h-4" />
+                        <span>Texto & PDF</span>
+                      </span>
+                      {materialKind === 'manual_pdf' && (
+                        <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-sm font-black text-slate-900 pt-1">
+                      📄 Manual / Regra / PDF
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Comunicado, regra bancária, checklist ou apostila em PDF para leitura e download na categoria escolhida.
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* PASSO 2: TÍTULO E CATEGORIA */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <label className="text-xs font-extrabold text-slate-700 block mb-1">TÍTULO DO MATERIAL</label>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  TÍTULO DO MATERIAL / TREINAMENTO *
+                </label>
                 <input
                   type="text"
                   placeholder="ex: Treinamento Financiamento Habitacional Caixa 2026 - Esteira & Checklist"
@@ -931,7 +1174,9 @@ export default function AdminMateriaisClient({
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-slate-700 block mb-1">CATEGORIA</label>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  CATEGORIA DO SISTEMA *
+                </label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
@@ -953,11 +1198,11 @@ export default function AdminMateriaisClient({
 
             <div>
               <label className="text-xs font-extrabold text-slate-700 block mb-1">
-                RESUMO CURTO (Aparece no card na tela inicial)
+                RESUMO CURTO (Aparece no card de apresentação) *
               </label>
               <textarea
                 rows={2}
-                placeholder="Descreva brevemente as principais orientações, regras ou objetivos deste material..."
+                placeholder="Descreva brevemente as principais orientações, regras ou objetivos deste treinamento/material..."
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -966,96 +1211,99 @@ export default function AdminMateriaisClient({
             </div>
 
             {/* VIDEO TRAINING INPUT & LIVE INLINE PREVIEW */}
-            <div className="bg-rose-50/70 p-5 rounded-2xl border border-rose-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-black text-rose-950 flex items-center gap-1.5 uppercase tracking-wide">
+            <div
+              className={`p-5 rounded-2xl border space-y-3 ${
+                materialKind === 'reel_9_16'
+                  ? 'bg-cyan-50/70 border-cyan-200'
+                  : 'bg-rose-50/70 border-rose-200'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
                   <Video className="w-4 h-4 text-rose-600" />
-                  Link do Vídeo do YouTube (Toca Direto no Sistema sem Sair)
+                  <span>
+                    {materialKind === 'reel_9_16'
+                      ? 'Link do Vídeo Vertical 9:16 (Vai para o Player de Reels no Topo)'
+                      : 'Link do Vídeo de Treinamento 16:9 (Vai para Treinamentos Completos abaixo dos Reels)'}
+                  </span>
                 </label>
-                <span className="text-[11px] font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full">
-                  Reprodutor Integrado
+                <span
+                  className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                    materialKind === 'reel_9_16'
+                      ? 'text-cyan-800 bg-cyan-100 border border-cyan-300'
+                      : 'text-rose-700 bg-rose-100 border border-rose-300'
+                  }`}
+                >
+                  {materialKind === 'reel_9_16'
+                    ? '📱 Destino: Reels (9:16)'
+                    : '📺 Destino: Treinamento Completo (16:9)'}
                 </span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Cole o link do vídeo do YouTube (inclusive vídeos Não Listados, Shorts ou links normais). O vídeo toca diretamente dentro da página sem redirecionar para outro site.
+                Cole o link do YouTube (inclusive Não Listado), Vimeo, Loom ou Google Drive. O vídeo toca direto no painel sem sair do sistema.
               </p>
               <input
                 type="url"
-                placeholder="ex: https://www.youtube.com/watch?v=... ou https://youtu.be/... ou Vimeo / Google Drive"
+                placeholder={
+                  materialKind === 'reel_9_16'
+                    ? 'ex: https://www.youtube.com/shorts/...'
+                    : 'ex: https://www.youtube.com/watch?v=... ou https://youtu.be/...'
+                }
                 value={videoUrl}
                 onChange={(e) => {
                   const val = e.target.value;
                   setVideoUrl(val);
-                  if (val.includes('/shorts/') && videoType !== 'reel') {
-                    setVideoType('reel');
+                  if (val.trim() && materialKind === 'manual_pdf') {
+                    // Se estava como manual e colou vídeo, define como 16:9 por padrão (ou 9:16 se for /shorts/)
+                    if (val.includes('/shorts/')) {
+                      setMaterialKind('reel_9_16');
+                      setVideoType('reel');
+                    } else {
+                      setMaterialKind('training_16_9');
+                      setVideoType('training');
+                    }
                   }
                 }}
                 className="w-full px-4 py-2.5 bg-white border border-rose-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
 
-              {/* SELEÇÃO DO FORMATO: REEL (9:16) OU VIDEOAULA COMPLETA (16:9) */}
+              {/* CONFIRMAÇÃO RÁPIDA DE FORMATO QUANDO HÁ URL DE VÍDEO */}
               {videoUrl.trim() && (
-                <div className="bg-white p-4 rounded-xl border border-rose-200 shadow-sm space-y-2.5 mt-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-black text-slate-900 uppercase tracking-wide">
-                      Formato do Vídeo &bull; Onde deve aparecer? *
-                    </label>
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                      Escolha Obrigatória
-                    </span>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="text-xs">
+                    <span className="font-black text-slate-900">Formato selecionado para este vídeo: </span>
+                    {videoType === 'reel' ? (
+                      <span className="font-bold text-cyan-700">
+                        📱 Reel Vertical (9:16) — Aparecerá no Player de Reels do topo
+                      </span>
+                    ) : (
+                      <span className="font-bold text-rose-700">
+                        📺 Treinamento Completo (16:9) — Aparecerá na grade abaixo dos Reels
+                      </span>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Opção 1: Reel / Dica Rápida */}
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setVideoType('reel')}
-                      className={`p-3.5 rounded-xl border-2 text-left transition flex items-start space-x-3 ${
-                        videoType === 'reel'
-                          ? 'border-blue-600 bg-blue-50/80 shadow-sm'
-                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
-                      }`}
-                    >
-                      <span className="text-2xl shrink-0">📱</span>
-                      <div>
-                        <div className="flex items-center space-x-1.5">
-                          <p className={`text-xs font-black ${videoType === 'reel' ? 'text-blue-700' : 'text-slate-800'}`}>
-                            Reel / Dica Rápida (9:16)
-                          </p>
-                          {videoType === 'reel' && (
-                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                          Vídeo vertical curto. Aparece no <strong>Feed de Reels no topo</strong> de Treinamentos.
-                        </p>
-                      </div>
-                    </button>
-
-                    {/* Opção 2: Videoaula Completa */}
-                    <button
-                      type="button"
-                      onClick={() => setVideoType('training')}
-                      className={`p-3.5 rounded-xl border-2 text-left transition flex items-start space-x-3 ${
+                      onClick={() => handleSelectMaterialKind('training_16_9')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition ${
                         videoType === 'training'
-                          ? 'border-blue-600 bg-blue-50/80 shadow-sm'
-                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                          ? 'bg-rose-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      <span className="text-2xl shrink-0">📺</span>
-                      <div>
-                        <div className="flex items-center space-x-1.5">
-                          <p className={`text-xs font-black ${videoType === 'training' ? 'text-blue-700' : 'text-slate-800'}`}>
-                            Videoaula Completa (16:9)
-                          </p>
-                          {videoType === 'training' && (
-                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                          Vídeo longo horizontal. Aparece na grade de <strong>Videoaulas e Tutoriais abaixo</strong>.
-                        </p>
-                      </div>
+                      📺 Usar 16:9 (Abaixo dos Reels)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectMaterialKind('reel_9_16')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition ${
+                        videoType === 'reel'
+                          ? 'bg-cyan-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      📱 Usar 9:16 (Reels)
                     </button>
                   </div>
                 </div>
@@ -1067,7 +1315,11 @@ export default function AdminMateriaisClient({
                   <p className="text-[11px] font-extrabold text-slate-700 mb-1 flex items-center gap-1">
                     <span>Pré-visualização do Reprodutor Integrado:</span>
                   </p>
-                  <VideoPlayer url={videoUrl} title={title || 'Prévia do Vídeo de Treinamento'} />
+                  <VideoPlayer
+                    url={videoUrl}
+                    title={title || 'Prévia do Vídeo de Treinamento'}
+                    videoType={videoType}
+                  />
                 </div>
               )}
             </div>
@@ -1077,7 +1329,10 @@ export default function AdminMateriaisClient({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <label className="text-xs font-black text-slate-800 flex items-center gap-1.5 uppercase tracking-wide">
                   <FileText className="w-4 h-4 text-blue-700" />
-                  CONTEÚDO DETALHADO & REGRAS (EDITOR AVANÇADO)
+                  <span>
+                    CONTEÚDO DETALHADO & REGRAS{' '}
+                    {videoUrl.trim() ? '(Opcional para vídeos)' : '*'}
+                  </span>
                 </label>
                 <span className="text-[11px] text-slate-500">
                   Use os botões da barra para mudar a <strong className="text-rose-600">cor das letras para vermelho</strong>, adicionar títulos e caixas de alerta.
@@ -1260,7 +1515,11 @@ export default function AdminMateriaisClient({
                   ? 'Salvando...'
                   : editingArticleId
                   ? 'Salvar Alterações do Material'
-                  : 'Publicar Novo Material'}
+                  : materialKind === 'training_16_9'
+                  ? 'Publicar Treinamento Completo (16:9)'
+                  : materialKind === 'reel_9_16'
+                  ? 'Publicar Pílula Rápida / Reel (9:16)'
+                  : 'Publicar Manual / Regra'}
               </button>
             </div>
           </form>
@@ -1603,18 +1862,23 @@ export default function AdminMateriaisClient({
             <div>
               <div className="flex items-center space-x-2 text-blue-700 text-xs font-extrabold uppercase tracking-wider mb-1">
                 <Sparkles className="w-4 h-4 text-cyan-500" />
-                <span>Gestão de Vídeos Verticais</span>
+                <span>Gestão de Vídeos Verticais (9:16)</span>
               </div>
               <h2 className="text-xl font-black text-slate-900">
                 Pílulas Rápidas & Feed de Reels (Treinamentos)
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Gerencie os vídeos curtos de rolagem estilo Shorts que aparecem na aba &quot;Treinamentos e Videoaulas&quot;.
+                Gerencie os vídeos curtos verticais (9:16) que aparecem no canto superior da aba &quot;Treinamentos e Videoaulas&quot;.
               </p>
             </div>
           </div>
 
-          <AdminReelsManager />
+          <AdminReelsManager
+            onConvertedToArticle={(newArticle) => {
+              setArticles((prev) => [newArticle, ...prev]);
+              router.refresh();
+            }}
+          />
         </div>
       )}
 

@@ -10,16 +10,21 @@ import {
   CheckCircle,
   AlertCircle,
   Video,
-  Play,
   RotateCw,
   Eye,
+  MonitorPlay,
 } from 'lucide-react';
 import type { ShortReelItem } from '@/lib/reels';
 
-export default function AdminReelsManager() {
+export default function AdminReelsManager({
+  onConvertedToArticle,
+}: {
+  onConvertedToArticle?: (article: any) => void;
+}) {
   const [reels, setReels] = useState<ShortReelItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -79,7 +84,7 @@ export default function AdminReelsManager() {
         throw new Error(data.error || 'Erro ao cadastrar reel');
       }
 
-      setFeedback({ type: 'success', message: 'Pílula/Reel cadastrado com sucesso!' });
+      setFeedback({ type: 'success', message: 'Pílula/Reel (9:16) cadastrado com sucesso!' });
       setTitle('');
       setVideoUrl('');
       setDescription('');
@@ -89,6 +94,44 @@ export default function AdminReelsManager() {
       setFeedback({ type: 'error', message: err.message || 'Erro ao salvar reel.' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleConvertReelToTraining = async (reel: ShortReelItem) => {
+    if (
+      !confirm(
+        `Deseja mover "${reel.title}" do player de Reels (9:16) para a seção de Treinamentos Completos (16:9) logo abaixo dos Reels?`
+      )
+    ) {
+      return;
+    }
+
+    setConvertingId(reel.id);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/reels/${reel.id}`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.article) {
+        setFeedback({
+          type: 'success',
+          message: `"${reel.title}" foi convertido para Treinamento Completo (16:9) e agora aparece abaixo dos Reels!`,
+        });
+        if (onConvertedToArticle) {
+          onConvertedToArticle(data.article);
+        }
+        loadReels();
+      } else {
+        setFeedback({
+          type: 'error',
+          message: data.error || 'Erro ao converter para treinamento 16:9.',
+        });
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', message: 'Erro de conexão ao converter vídeo.' });
+    } finally {
+      setConvertingId(null);
     }
   };
 
@@ -110,6 +153,8 @@ export default function AdminReelsManager() {
   };
 
   const previewYtId = extractYouTubeId(videoUrl);
+  const looksLikeHorizontalVideo =
+    videoUrl.trim().length > 0 && !videoUrl.toLowerCase().includes('/shorts/');
 
   return (
     <div className="space-y-8">
@@ -138,9 +183,9 @@ export default function AdminReelsManager() {
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900">Cadastrar Nova Pílula Rápida (Reel)</h3>
+            <h3 className="text-lg font-black text-slate-900">Cadastrar Nova Pílula Rápida (Reel 9:16)</h3>
             <p className="text-xs text-slate-500">
-              Cole o link do YouTube Shorts (inclusive <strong>Não Listado</strong>) ou arquivo MP4 direto.
+              Exclusivo para vídeos verticais curtos (YouTube Shorts 9:16). Para vídeos em <strong>16:9 (Treinamento Padrão)</strong>, utilize a aba <strong>&quot;Publicar Novo Material&quot;</strong>.
             </p>
           </div>
         </div>
@@ -165,19 +210,27 @@ export default function AdminReelsManager() {
             {/* URL do Vídeo */}
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-xs font-extrabold text-slate-700 flex items-center justify-between">
-                <span>Link do YouTube Shorts (ou Vídeo Não Listado) *</span>
+                <span>Link do YouTube Shorts Vertical (9:16) *</span>
                 <span className="text-[11px] font-normal text-slate-400">
                   ex: https://youtube.com/shorts/kJQP7kiw5Fk
                 </span>
               </label>
               <input
                 type="url"
-                placeholder="https://www.youtube.com/shorts/... ou https://youtu.be/..."
+                placeholder="https://www.youtube.com/shorts/..."
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 required
               />
+              {looksLikeHorizontalVideo && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-start gap-2 mt-1.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Atenção:</strong> Este link parece ser um vídeo horizontal padrão (16:9) e não um Shorts (`/shorts/`). Se for um treinamento completo em 16:9, cadastre-o na aba <strong>&quot;Publicar Novo Material&quot;</strong> marcando <strong>&quot;Treinamento Completo (16:9)&quot;</strong> para que ele apareça abaixo dos Reels!
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Tag / Assunto */}
@@ -253,7 +306,7 @@ export default function AdminReelsManager() {
               className="inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-extrabold px-6 py-3 rounded-xl text-xs transition shadow-md active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>{isSubmitting ? 'Salvando...' : 'Adicionar ao Feed de Reels'}</span>
+              <span>{isSubmitting ? 'Salvando...' : 'Adicionar ao Feed de Reels (9:16)'}</span>
             </button>
           </div>
         </form>
@@ -262,12 +315,17 @@ export default function AdminReelsManager() {
       {/* Lista de Reels Existentes */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <span>Pílulas Rápidas Disponíveis</span>
-            <span className="text-xs font-bold bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full">
-              {reels.length}
-            </span>
-          </h4>
+          <div>
+            <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <span>Pílulas Rápidas Disponíveis (Reels 9:16)</span>
+              <span className="text-xs font-bold bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full">
+                {reels.length}
+              </span>
+            </h4>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Subiu um vídeo 16:9 aqui por engano? Clique em <strong>&quot;Mover p/ Treinamento 16:9&quot;</strong> para transferi-lo para a grade abaixo dos Reels.
+            </p>
+          </div>
           <button
             onClick={loadReels}
             className="text-xs font-bold text-blue-700 hover:text-blue-800 flex items-center gap-1"
@@ -289,6 +347,7 @@ export default function AdminReelsManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {reels.map((reel) => {
               const reelYtId = extractYouTubeId(reel.videoUrl);
+              const isConverting = convertingId === reel.id;
               return (
                 <div
                   key={reel.id}
@@ -311,7 +370,7 @@ export default function AdminReelsManager() {
                   </div>
 
                   {/* Informações */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between h-32">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[8rem]">
                     <div>
                       {reel.categoryTag && (
                         <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wide block truncate">
@@ -328,24 +387,37 @@ export default function AdminReelsManager() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <a
-                        href={reel.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] font-bold text-cyan-700 hover:text-cyan-800 flex items-center gap-1"
-                      >
-                        <span>Abrir Link</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 mt-2 border-t border-slate-100">
                       <button
-                        onClick={() => handleDeleteReel(reel.id, reel.title)}
-                        className="text-xs text-rose-600 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition"
-                        title="Excluir Pílula"
+                        type="button"
+                        disabled={isConverting}
+                        onClick={() => handleConvertReelToTraining(reel)}
+                        className="text-[11px] font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition disabled:opacity-50"
+                        title="Converter para Treinamento Completo 16:9 (abaixo dos Reels)"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <MonitorPlay className="w-3.5 h-3.5 text-rose-600" />
+                        <span>{isConverting ? 'Movendo...' : 'Mover p/ Treinamento 16:9'}</span>
                       </button>
+
+                      <div className="flex items-center space-x-2">
+                        <a
+                          href={reel.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-bold text-cyan-700 hover:text-cyan-800 flex items-center gap-1"
+                        >
+                          <span>Abrir</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+
+                        <button
+                          onClick={() => handleDeleteReel(reel.id, reel.title)}
+                          className="text-xs text-rose-600 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition"
+                          title="Excluir Pílula"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

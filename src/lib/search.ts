@@ -162,7 +162,7 @@ export interface SearchableArticle {
   attachments?: Array<{
     id?: string;
     name: string;
-    fileUrl: string;
+    fileUrl?: string;
     fileType?: string;
   }>;
   updatedAt?: Date | string;

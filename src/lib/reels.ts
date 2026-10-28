@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { getCached, setCached } from './cache';
 
 export interface ShortReelItem {
   id: string;
@@ -12,13 +13,13 @@ export interface ShortReelItem {
   updatedAt?: string | Date;
 }
 
-// Nenhum mock ou reel estático fake: somente o que o usuário cadastrar no sistema
 export const DEFAULT_SHORT_REELS: ShortReelItem[] = [];
 
 let isTableVerified = false;
 
 async function ensureShortReelTable() {
   if (isTableVerified) return;
+  isTableVerified = true;
   try {
     await (prisma as any).$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "ShortReel" (
@@ -33,13 +34,15 @@ async function ensureShortReelTable() {
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    isTableVerified = true;
   } catch (err) {
     console.warn('Verificação de tabela ShortReel:', err);
   }
 }
 
 export async function getActiveShortReels(): Promise<ShortReelItem[]> {
+  const cached = getCached<ShortReelItem[]>('reels:active', 60000);
+  if (cached) return cached;
+
   try {
     await ensureShortReelTable();
 
@@ -48,11 +51,9 @@ export async function getActiveShortReels(): Promise<ShortReelItem[]> {
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
     });
 
-    if (reels && Array.isArray(reels)) {
-      return reels;
-    }
-
-    return [];
+    const result = Array.isArray(reels) ? reels : [];
+    setCached('reels:active', result);
+    return result;
   } catch (error) {
     console.error('Erro ao buscar reels no banco:', error);
     return [];

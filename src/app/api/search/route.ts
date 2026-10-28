@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getFastArticlesList } from '@/lib/cache';
 import { getActiveShortReels } from '@/lib/reels';
 import { smartSearchArticles, smartSearchReels } from '@/lib/search';
 
@@ -14,34 +14,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ articles: [], reels: [] });
     }
 
-    const allArticles = await prisma.article.findMany({
-      where: {
-        category: {
-          slug: {
-            notIn: ['credito-pj', 'credito-agro'],
-          },
-        },
-      },
-      include: {
-        category: true,
-        attachments: true,
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+    const [allArticles, activeReels] = await Promise.all([
+      getFastArticlesList(),
+      getActiveShortReels(),
+    ]);
 
-    const matchedArticles = smartSearchArticles(allArticles, q).slice(0, 8).map((art) => ({
+    const matchedArticles = smartSearchArticles(allArticles, q).slice(0, 8).map((art: any) => ({
       id: art.id,
       title: art.title,
       summary: art.summary,
       videoUrl: art.videoUrl,
-      videoType: (art as any).videoType || 'training',
+      videoType: art.videoType || 'training',
       categoryName: art.category?.name || 'Geral',
       categorySlug: art.category?.slug || 'all',
       attachmentsCount: art.attachments?.length || 0,
       firstAttachmentName: art.attachments?.[0]?.name || null,
     }));
 
-    const activeReels = await getActiveShortReels();
     const matchedReels = smartSearchReels(activeReels, q).slice(0, 4).map((r) => ({
       id: r.id,
       title: r.title,

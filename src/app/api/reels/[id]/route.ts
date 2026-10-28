@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 import { getOrSeedCategories } from '@/lib/categories';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PUT(
   request: Request,
@@ -29,6 +30,7 @@ export async function PUT(
       },
     });
 
+    invalidateCache();
     revalidatePath('/categorias/treinamentos');
     return NextResponse.json(updated);
   } catch (error) {
@@ -88,6 +90,7 @@ export async function POST(
     });
 
     revalidatePath('/');
+    invalidateCache();
     revalidatePath('/categorias/treinamentos');
     revalidatePath('/categorias/[slug]', 'page');
 
@@ -115,6 +118,7 @@ export async function DELETE(
       where: { id: params.id },
     });
 
+    invalidateCache();
     revalidatePath('/categorias/treinamentos');
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -22,6 +22,18 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {/* Preconnect para carregamento instantâneo de vídeos Vimeo e YouTube */}
+        <link rel="preconnect" href="https://player.vimeo.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://i.vimeocdn.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://f.vimeocdn.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://vod-progressive.akamaized.net" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://vumbnail.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.youtube-nocookie.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://img.youtube.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://player.vimeo.com" />
+        <link rel="dns-prefetch" href="https://i.vimeocdn.com" />
+        <link rel="dns-prefetch" href="https://f.vimeocdn.com" />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `

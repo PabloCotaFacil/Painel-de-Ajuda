@@ -1,6 +1,7 @@
 'use client';
 
-import { Video } from 'lucide-react';
+import { useState } from 'react';
+import { Video, Loader2 } from 'lucide-react';
 
 interface VideoPlayerProps {
   url: string;
@@ -15,23 +16,91 @@ export function extractYouTubeId(rawUrl: string): string | null {
   return match ? match[1] : null;
 }
 
-export function getEmbedInfo(rawUrl: string): { type: 'iframe' | 'video'; src: string } {
-  const trimmed = (rawUrl || '').trim();
-  // 1. YouTube (qualquer formato: watch, youtu.be, shorts, live, embed, com parâmetros extras)
-  const ytId = extractYouTubeId(trimmed);
-  if (ytId) {
+export function extractVimeoInfo(rawUrl: string): { id: string; hash?: string } | null {
+  if (!rawUrl) return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed.includes('vimeo.com')) return null;
+
+  // Extrai parâmetro ?h= se existir na query string
+  const queryHashMatch = trimmed.match(/[?&]h=([a-zA-Z0-9]+)/);
+  const queryHash = queryHashMatch ? queryHashMatch[1] : undefined;
+
+  // Suporta vimeo.com/123456, vimeo.com/123456/hash, player.vimeo.com/video/123456, vimeo.com/manage/videos/123456
+  const pathMatch = trimmed.match(
+    /vimeo\.com\/(?:manage\/videos\/|video\/|channels\/[^\/]+\/|groups\/[^\/]+\/videos\/|album\/\d+\/video\/)?(\d+)(?:\/([a-zA-Z0-9]+))?/
+  );
+
+  if (pathMatch && pathMatch[1]) {
     return {
-      type: 'iframe',
-      src: `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1&playsinline=1&enablejsapi=1`,
+      id: pathMatch[1],
+      hash: pathMatch[2] || queryHash,
     };
   }
 
-  // 2. Vimeo
-  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)/);
-  if (vimeoMatch && vimeoMatch[3]) {
+  return null;
+}
+
+export function getVideoThumbnail(rawUrl?: string | null): string | null {
+  if (!rawUrl) return null;
+  const ytId = extractYouTubeId(rawUrl);
+  if (ytId) {
+    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+  }
+  const vimeo = extractVimeoInfo(rawUrl);
+  if (vimeo) {
+    return `https://vumbnail.com/${vimeo.id}.jpg`;
+  }
+  return null;
+}
+
+export function getEmbedInfo(
+  rawUrl: string,
+  options?: { autoplay?: boolean; muted?: boolean; loop?: boolean }
+): { type: 'iframe' | 'video'; src: string; provider: 'youtube' | 'vimeo' | 'other' } {
+  const trimmed = (rawUrl || '').trim();
+
+  // 1. YouTube
+  const ytId = extractYouTubeId(trimmed);
+  if (ytId) {
+    const params = new URLSearchParams({
+      rel: '0',
+      modestbranding: '1',
+      playsinline: '1',
+      enablejsapi: '1',
+    });
+    if (options?.autoplay) params.set('autoplay', '1');
+    if (options?.muted !== undefined) params.set('mute', options.muted ? '1' : '0');
+    if (options?.loop) {
+      params.set('loop', '1');
+      params.set('playlist', ytId);
+    }
     return {
       type: 'iframe',
-      src: `https://player.vimeo.com/video/${vimeoMatch[3]}?title=0&byline=0&portrait=0`,
+      provider: 'youtube',
+      src: `https://www.youtube-nocookie.com/embed/${ytId}?${params.toString()}`,
+    };
+  }
+
+  // 2. Vimeo (Otimizado com dnt=1 e preload=auto para carregamento ultrarrápido + suporte a vídeos não listados com hash)
+  const vimeo = extractVimeoInfo(trimmed);
+  if (vimeo) {
+    const params = new URLSearchParams();
+    if (vimeo.hash) params.set('h', vimeo.hash);
+    params.set('dnt', '1'); // Desativa rastreamento pesado do Vimeo (carrega até 3x mais rápido)
+    params.set('title', '0');
+    params.set('byline', '0');
+    params.set('portrait', '0');
+    params.set('badge', '0');
+    params.set('autopause', '0');
+    params.set('preload', 'auto');
+    if (options?.autoplay) params.set('autoplay', '1');
+    if (options?.muted !== undefined) params.set('muted', options.muted ? '1' : '0');
+    if (options?.loop) params.set('loop', '1');
+
+    return {
+      type: 'iframe',
+      provider: 'vimeo',
+      src: `https://player.vimeo.com/video/${vimeo.id}?${params.toString()}`,
     };
   }
 
@@ -40,6 +109,7 @@ export function getEmbedInfo(rawUrl: string): { type: 'iframe' | 'video'; src: s
   if (loomMatch && loomMatch[1]) {
     return {
       type: 'iframe',
+      provider: 'other',
       src: `https://www.loom.com/embed/${loomMatch[1]}`,
     };
   }
@@ -49,17 +119,18 @@ export function getEmbedInfo(rawUrl: string): { type: 'iframe' | 'video'; src: s
   if (gdriveMatch && gdriveMatch[1]) {
     return {
       type: 'iframe',
+      provider: 'other',
       src: `https://drive.google.com/file/d/${gdriveMatch[1]}/preview`,
     };
   }
 
   // 5. Iframe já formatado
-  if (trimmed.includes('/embed/')) {
-    return { type: 'iframe', src: trimmed };
+  if (trimmed.includes('/embed/') || trimmed.includes('player.vimeo.com')) {
+    return { type: 'iframe', provider: 'other', src: trimmed };
   }
 
-  // 6. Direct MP4 / WebM / OGG video file or local upload
-  return { type: 'video', src: trimmed };
+  // 6. Arquivo de vídeo direto (MP4 / WebM)
+  return { type: 'video', provider: 'other', src: trimmed };
 }
 
 export default function VideoPlayer({
@@ -67,6 +138,8 @@ export default function VideoPlayer({
   title = 'Vídeo de Treinamento',
   videoType,
 }: VideoPlayerProps) {
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
   if (!url) return null;
 
   const trimmedUrl = url.trim();
@@ -104,17 +177,27 @@ export default function VideoPlayer({
           className={
             isShorts
               ? 'relative w-full max-w-[340px] aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl'
-              : 'w-full h-full'
+              : 'relative w-full h-full'
           }
         >
           {embed.type === 'iframe' ? (
-            <iframe
-              src={embed.src}
-              title={title}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
+            <>
+              {!iframeLoaded && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-slate-400 z-10 pointer-events-none">
+                  <Loader2 className="w-7 h-7 text-cyan-400 animate-spin mb-2" />
+                  <span className="text-xs font-semibold">Carregando reprodutor de vídeo...</span>
+                </div>
+              )}
+              <iframe
+                src={embed.src}
+                title={title}
+                loading="eager"
+                onLoad={() => setIframeLoaded(true)}
+                className="w-full h-full border-0 relative z-20"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                allowFullScreen
+              />
+            </>
           ) : (
             <video
               src={embed.src}

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
+import { invalidateCache } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -28,7 +30,8 @@ export async function GET() {
           id: 'default-hero',
           badgeText: 'Regras & Manuais 2025/2026',
           title: 'Como podemos te ajudar?',
-          subtitle: 'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
+          subtitle:
+            'Consulte manuais operacionais de bancos, downloads de PDFs com checklist de esteira e regras operacionais atualizadas.',
           primaryButtonText: 'Ver Regras & Manuais',
           primaryButtonUrl: '/categorias/treinamentos',
           secondaryButtonText: '',
@@ -108,6 +111,9 @@ export async function PUT(request: Request) {
         ...safeData,
       },
     });
+
+    invalidateCache();
+    revalidatePath('/');
 
     return NextResponse.json(banner);
   } catch (error: any) {

@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Play,
 } from 'lucide-react';
-import { extractYouTubeId } from './VideoPlayer';
+import { getEmbedInfo } from './VideoPlayer';
 
 export interface HeroCardItem {
   id: string;
@@ -107,7 +107,6 @@ export default function HeroMedia({
   videoTitle,
   cardsJson,
 }: HeroMediaProps) {
-  // Parsing cards
   let cards: HeroCardItem[] = defaultCards;
   if (cardsJson) {
     try {
@@ -126,25 +125,9 @@ export default function HeroMedia({
   // Se o modo for vídeo e houver URL válida
   if (mediaType === 'video' && videoUrl?.trim()) {
     const rawUrl = videoUrl.trim();
-    const ytId = extractYouTubeId(rawUrl);
-
-    let embedSrc = '';
-    let isIframe = true;
-
-    if (ytId) {
-      embedSrc = `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
-    } else if (rawUrl.includes('/embed/')) {
-      embedSrc = rawUrl;
-    } else if (rawUrl.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/)) {
-      const loomId = rawUrl.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/)?.[1];
-      embedSrc = `https://www.loom.com/embed/${loomId}`;
-    } else if (rawUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)) {
-      const driveId = rawUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)?.[1];
-      embedSrc = `https://drive.google.com/file/d/${driveId}/preview`;
-    } else {
-      isIframe = false;
-      embedSrc = rawUrl;
-    }
+    const embedInfo = getEmbedInfo(rawUrl);
+    const embedSrc = embedInfo.src;
+    const isIframe = embedInfo.type === 'iframe';
 
     return (
       <div className="w-full flex flex-col justify-center max-w-[440px] mx-auto">
@@ -164,8 +147,9 @@ export default function HeroMedia({
               <iframe
                 src={embedSrc}
                 title={videoTitle || 'Vídeo de Destaque CotaFácil'}
+                loading="eager"
                 className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
               />
             ) : (

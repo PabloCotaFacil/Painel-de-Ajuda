@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { extractYouTubeId } from './VideoPlayer';
+import { getEmbedInfo, getVideoThumbnail } from './VideoPlayer';
 import {
   Sparkles,
   Plus,
@@ -152,9 +152,11 @@ export default function AdminReelsManager({
     }
   };
 
-  const previewYtId = extractYouTubeId(videoUrl);
+  const previewEmbed = videoUrl.trim() ? getEmbedInfo(videoUrl) : null;
   const looksLikeHorizontalVideo =
-    videoUrl.trim().length > 0 && !videoUrl.toLowerCase().includes('/shorts/');
+    videoUrl.trim().length > 0 &&
+    !videoUrl.toLowerCase().includes('/shorts/') &&
+    !videoUrl.toLowerCase().includes('vimeo.com');
 
   return (
     <div className="space-y-8">
@@ -284,10 +286,11 @@ export default function AdminReelsManager({
                 <span>Pré-visualização do Reel Vertical (9:16)</span>
               </div>
               <div className="max-w-[260px] mx-auto aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-slate-700 shadow-xl">
-                {previewYtId ? (
+                {previewEmbed && previewEmbed.type === 'iframe' ? (
                   <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${previewYtId}?rel=0&modestbranding=1&playsinline=1`}
+                    src={previewEmbed.src}
                     className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
                   />
                 ) : (
@@ -346,7 +349,7 @@ export default function AdminReelsManager({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {reels.map((reel) => {
-              const reelYtId = extractYouTubeId(reel.videoUrl);
+              const reelThumb = getVideoThumbnail(reel.videoUrl);
               const isConverting = convertingId === reel.id;
               return (
                 <div
@@ -355,10 +358,12 @@ export default function AdminReelsManager({
                 >
                   {/* Thumbnail / Miniatura */}
                   <div className="w-20 h-32 bg-slate-900 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center border border-slate-800">
-                    {reelYtId ? (
+                    {reelThumb ? (
                       <img
-                        src={`https://img.youtube.com/vi/${reelYtId}/hqdefault.jpg`}
+                        src={reelThumb}
                         alt={reel.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     ) : (

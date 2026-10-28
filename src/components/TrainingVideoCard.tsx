@@ -9,13 +9,14 @@ import {
   ExternalLink,
   MonitorPlay,
   Eye,
+  Loader2,
 } from 'lucide-react';
-import { extractYouTubeId, getEmbedInfo } from './VideoPlayer';
+import { getEmbedInfo, getVideoThumbnail } from './VideoPlayer';
 
 interface Attachment {
   id: string;
   name: string;
-  fileUrl: string;
+  fileUrl?: string;
   fileType: string;
 }
 
@@ -35,6 +36,7 @@ interface TrainingArticle {
 
 export default function TrainingVideoCard({ article }: { article: TrainingArticle }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   const formattedDate = new Date(article.updatedAt).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -43,14 +45,8 @@ export default function TrainingVideoCard({ article }: { article: TrainingArticl
   });
 
   const videoUrl = (article.videoUrl || '').trim();
-  const ytId = extractYouTubeId(videoUrl);
-  const embed = getEmbedInfo(videoUrl);
-
-  // URL com autoplay quando o usuário clica em Assistir no card
-  const activeEmbedSrc =
-    embed.type === 'iframe' && ytId
-      ? `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`
-      : embed.src;
+  const thumbnailUrl = getVideoThumbnail(videoUrl);
+  const embed = getEmbedInfo(videoUrl, { autoplay: true });
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 card-shadow hover:border-blue-400 dark:hover:border-blue-500 transition flex flex-col justify-between group">
@@ -59,16 +55,26 @@ export default function TrainingVideoCard({ article }: { article: TrainingArticl
         <div className="relative w-full aspect-video bg-slate-950 overflow-hidden border-b border-slate-200 dark:border-slate-800">
           {isPlaying && videoUrl ? (
             embed.type === 'iframe' ? (
-              <iframe
-                src={activeEmbedSrc}
-                title={article.title}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+              <div className="relative w-full h-full">
+                {!iframeLoaded && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-slate-400 z-10 pointer-events-none">
+                    <Loader2 className="w-7 h-7 text-cyan-400 animate-spin mb-1.5" />
+                    <span className="text-xs font-bold">Iniciando aula...</span>
+                  </div>
+                )}
+                <iframe
+                  src={embed.src}
+                  title={article.title}
+                  loading="eager"
+                  onLoad={() => setIframeLoaded(true)}
+                  className="w-full h-full border-0 relative z-20"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allowFullScreen
+                />
+              </div>
             ) : (
               <video
-                src={activeEmbedSrc}
+                src={embed.src}
                 controls
                 autoPlay
                 playsInline
@@ -82,10 +88,12 @@ export default function TrainingVideoCard({ article }: { article: TrainingArticl
               className="w-full h-full relative flex items-center justify-center group/play text-left focus:outline-none"
               title="Clique para reproduzir o treinamento 16:9 aqui mesmo"
             >
-              {ytId ? (
+              {thumbnailUrl ? (
                 <img
-                  src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                  src={thumbnailUrl}
                   alt={article.title}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover opacity-90 group-hover/play:scale-105 group-hover/play:opacity-100 transition duration-300"
                 />
               ) : (

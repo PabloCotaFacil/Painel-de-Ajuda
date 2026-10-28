@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, Download, Info, Calendar, Video, Eye } from 'lucide-react';
+import { Info, Calendar, Video, Eye } from 'lucide-react';
 
 interface Attachment {
   id: string;
   name: string;
-  fileUrl: string;
+  fileUrl?: string;
   fileType: string;
 }
 

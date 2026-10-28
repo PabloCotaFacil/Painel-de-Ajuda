@@ -2,8 +2,8 @@ import CategoryCards from '@/components/CategoryCards';
 import ArticleCard from '@/components/ArticleCard';
 import HeroMedia from '@/components/HeroMedia';
 import SearchResultsAnchor from '@/components/SearchResultsAnchor';
-import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
+import { getFastArticlesList, getFastHeroBanner } from '@/lib/cache';
 import { smartSearchArticles } from '@/lib/search';
 import Link from 'next/link';
 import {
@@ -24,59 +24,12 @@ export default async function HomePage({
 }) {
   const query = searchParams.q || '';
 
-  // Garante que as categorias padrão existam
-  await getOrSeedCategories();
-
-  // Fetch Editable Hero Banner config
-  let heroBanner = await prisma.heroBanner.findUnique({
-    where: { id: 'default-hero' },
-  });
-
-  if (!heroBanner) {
-    heroBanner = {
-      id: 'default-hero',
-      badgeText: 'Regras & Manuais 2025/2026',
-      title: 'Como podemos te ajudar?',
-      subtitle: 'Consulte esteiras operacionais, regras de crédito imobiliário, downloads de PDFs e treinamentos atualizados.',
-      primaryButtonText: 'Ver Regras & Manuais',
-      primaryButtonUrl: '/categorias/treinamentos',
-      secondaryButtonText: null,
-      secondaryButtonUrl: null,
-      mediaType: 'cards',
-      videoUrl: null,
-      videoTitle: null,
-      cardsJson: '[]',
-      updatedAt: new Date(),
-    };
-  }
-
-  // Filtrar para nunca expor gestor ou admin no banner público
-  const isGestorOrAdminButton =
-    heroBanner.secondaryButtonUrl?.includes('admin') ||
-    heroBanner.secondaryButtonUrl?.includes('comissoes') ||
-    heroBanner.secondaryButtonText?.toLowerCase().includes('gestor') ||
-    heroBanner.secondaryButtonText?.toLowerCase().includes('admin');
-
-  const showSecondaryButton =
-    Boolean(heroBanner.secondaryButtonText?.trim()) &&
-    Boolean(heroBanner.secondaryButtonUrl?.trim()) &&
-    !isGestorOrAdminButton;
-
-  // Busca todos os materiais ativos e aplica o motor de busca inteligente (suporta 1 ou vários termos combinados)
-  const allArticles = await prisma.article.findMany({
-    where: {
-      category: {
-        slug: {
-          notIn: ['credito-pj', 'credito-agro'],
-        },
-      },
-    },
-    include: {
-      category: true,
-      attachments: true,
-    },
-    orderBy: { updatedAt: 'desc' },
-  });
+  // Executa todas as leituras em paralelo usando cache em memória (resposta em < 2ms)
+  const [, heroBanner, allArticles] = await Promise.all([
+    getOrSeedCategories(),
+    getFastHeroBanner(),
+    getFastArticlesList(),
+  ]);
 
   const articles = query.trim()
     ? smartSearchArticles(allArticles, query)

@@ -3,6 +3,7 @@ import TrainingVideoCard from '@/components/TrainingVideoCard';
 import TreinamentosReelsFeed, { type ReelFeedItem } from '@/components/TreinamentosReelsFeed';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
+import { getFastArticlesList, invalidateCache } from '@/lib/cache';
 import { getActiveShortReels } from '@/lib/reels';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -57,6 +58,8 @@ async function ensureVideoTypeMigration() {
         update: { value: 'true' },
         create: { key: configKey, value: 'true' },
       });
+
+      invalidateCache('articles');
     }
 
     isVideoTypeMigrated = true;
@@ -84,27 +87,17 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // Garantir que as categorias padrão e a coluna videoType existam no banco
-  await getOrSeedCategories();
   await ensureVideoTypeMigration();
+
+  const isTreinamentos = params.slug === 'treinamentos';
+  const [categories, allArticles, shortReels] = await Promise.all([
+    getOrSeedCategories(),
+    getFastArticlesList(),
+    isTreinamentos ? getActiveShortReels() : Promise.resolve([]),
+  ]);
 
   // Tratamento especial para "TODAS AS CATEGORIAS" (slug === 'all')
   if (params.slug === 'all') {
-    const allArticles = await prisma.article.findMany({
-      where: {
-        category: {
-          slug: {
-            notIn: REMOVED_CATEGORY_SLUGS,
-          },
-        },
-      },
-      include: {
-        category: true,
-        attachments: true,
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-
     return (
       <div className="space-y-6">
         {/* Botão de Retornar para a Página Inicial */}
@@ -158,25 +151,15 @@ export default async function CategoryPage({
     );
   }
 
-  const category = await prisma.category.findUnique({
-    where: { slug: params.slug },
-    include: {
-      articles: {
-        include: {
-          category: true,
-          attachments: true,
-        },
-        orderBy: { updatedAt: 'desc' },
-      },
-    },
-  });
-
-  if (!category) {
+  const foundCategory = categories.find((c: any) => c.slug === params.slug);
+  if (!foundCategory) {
     notFound();
   }
 
-  const isTreinamentos = params.slug === 'treinamentos';
-  const shortReels = isTreinamentos ? await getActiveShortReels() : [];
+  const category = {
+    ...foundCategory,
+    articles: allArticles.filter((a: any) => a.category?.slug === params.slug),
+  };
 
   // Função auxiliar para determinar se um artigo com vídeo é Reel (9:16) ou Treinamento Completo (16:9)
   const isArticleReel = (art: any): boolean => {

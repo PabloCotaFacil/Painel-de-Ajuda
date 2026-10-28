@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { getCached, setCached, isSchemaVerified, markSchemaVerified } from './cache';
 
 export interface DefaultCategoryDef {
   name: string;
@@ -23,28 +24,27 @@ export const DEFAULT_CATEGORIES: DefaultCategoryDef[] = [
 ];
 
 const REMOVED_CATEGORY_SLUGS = ['credito-pj', 'credito-agro'];
-
-let cachedCategories: any[] | null = null;
-let lastCacheTime = 0;
+const CATEGORIES_CACHE_KEY = 'categories:list';
 
 /**
- * Garante que o banco de dados sempre tenha as categorias básicas cadastradas,
- * evitando erros 404 em categorias e formulários com categorias vazias.
- * Usa cache de 60 segundos em memória para respostas instantâneas (0ms).
+ * Garante que o banco de dados tenha as categorias básicas e a coluna videoType.
+ * Usa cache em memória (5 minutos) e executa DDL apenas 1 vez por instância.
  */
 export async function getOrSeedCategories() {
-  const now = Date.now();
-  if (cachedCategories && cachedCategories.length > 0 && now - lastCacheTime < 60000) {
-    return cachedCategories;
+  const cached = getCached<any[]>(CATEGORIES_CACHE_KEY, 300000);
+  if (cached && cached.length > 0) {
+    return cached;
   }
 
   try {
-    // Garante que a coluna videoType exista na tabela Article para diferenciar Reels (9:16) de Treinamentos (16:9)
-    try {
-      await (prisma as any).$executeRawUnsafe(`
-        ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-      `);
-    } catch (_) {}
+    if (!isSchemaVerified()) {
+      markSchemaVerified();
+      try {
+        await (prisma as any).$executeRawUnsafe(`
+          ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
+        `);
+      } catch (_) {}
+    }
 
     let categories = await prisma.category.findMany({
       where: {
@@ -73,8 +73,9 @@ export async function getOrSeedCategories() {
         orderBy: { name: 'asc' },
       });
     } else {
-      // Atualiza o nome da categoria de treinamentos caso ainda esteja com o nome antigo
-      const oldTreinamento = categories.find((c) => c.slug === 'treinamentos' && c.name !== 'Treinamentos e Videoaulas');
+      const oldTreinamento = categories.find(
+        (c) => c.slug === 'treinamentos' && c.name !== 'Treinamentos e Videoaulas'
+      );
       if (oldTreinamento) {
         await prisma.category.update({
           where: { slug: 'treinamentos' },
@@ -95,12 +96,10 @@ export async function getOrSeedCategories() {
       }
     }
 
-    cachedCategories = categories;
-    lastCacheTime = now;
+    setCached(CATEGORIES_CACHE_KEY, categories);
     return categories;
   } catch (error) {
     console.error('Erro ao buscar/garantir categorias:', error);
-    // Retorna categorias com IDs mock para não quebrar a interface em caso de falha de conexão inicial
     return DEFAULT_CATEGORIES.map((c, i) => ({
       id: `default-${i + 1}`,
       name: c.name,

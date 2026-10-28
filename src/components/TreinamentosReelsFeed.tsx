@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { extractYouTubeId } from './VideoPlayer';
+import { getEmbedInfo, getVideoThumbnail } from './VideoPlayer';
 import {
   Volume2,
   VolumeX,
@@ -151,11 +151,13 @@ export default function TreinamentosReelsFeed({
     }
   };
 
-  const ytId = extractYouTubeId(currentReel.videoUrl);
-  const isYouTube = !!ytId;
-  const embedSrc = isYouTube
-    ? `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&playlist=${ytId}&playsinline=1&modestbranding=1&rel=0&controls=1`
-    : currentReel.videoUrl;
+  const embed = getEmbedInfo(currentReel.videoUrl, {
+    autoplay: true,
+    muted: isMuted,
+    loop: true,
+  });
+  const isIframe = embed.type === 'iframe';
+  const embedSrc = embed.src;
 
   const filteredReelsWithIndex = reels
     .map((item, idx) => ({ item, idx }))
@@ -230,13 +232,14 @@ export default function TreinamentosReelsFeed({
               <div className="absolute inset-0 w-full h-full bg-black">
                 {isMounted && (
                   <>
-                    {isYouTube ? (
+                    {isIframe ? (
                       <iframe
                         key={`${currentReel.id}-${currentIndex}-${isMuted}`}
                         src={embedSrc}
                         title={currentReel.title}
+                        loading="eager"
                         className="w-full h-full border-0 object-cover"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                         allowFullScreen
                       />
                     ) : (
@@ -413,7 +416,7 @@ export default function TreinamentosReelsFeed({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
               {filteredReelsWithIndex.map(({ item, idx }) => {
                 const isSelected = idx === currentIndex;
-                const itemYtId = extractYouTubeId(item.videoUrl);
+                const itemThumb = getVideoThumbnail(item.videoUrl);
                 return (
                   <button
                     key={item.id}
@@ -427,10 +430,12 @@ export default function TreinamentosReelsFeed({
                   >
                     {/* Miniatura 9:16 */}
                     <div className="w-11 h-16 rounded-lg bg-slate-900 overflow-hidden shrink-0 relative flex items-center justify-center border border-black/20">
-                      {itemYtId ? (
+                      {itemThumb ? (
                         <img
-                          src={`https://img.youtube.com/vi/${itemYtId}/hqdefault.jpg`}
+                          src={itemThumb}
                           alt={item.title}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       ) : (

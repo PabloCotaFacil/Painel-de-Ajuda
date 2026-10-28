@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 import { getAllShortReels } from '@/lib/reels';
+import { invalidateCache } from '@/lib/cache';
 
 export async function GET() {
   try {
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
       },
     });
 
+    invalidateCache();
     revalidatePath('/categorias/treinamentos');
     return NextResponse.json(newReel);
   } catch (error) {

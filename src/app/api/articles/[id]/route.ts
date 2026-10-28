@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
+import { invalidateCache } from '@/lib/cache';
 
 export async function PUT(
   request: Request,
@@ -63,6 +64,7 @@ export async function PUT(
       } catch (_) {}
     }
 
+    invalidateCache();
     revalidatePath('/');
     revalidatePath(`/artigos/${params.id}`);
     revalidatePath('/categorias/treinamentos');
@@ -111,6 +113,7 @@ export async function PATCH(
       } catch (_) {}
     }
 
+    invalidateCache();
     revalidatePath('/');
     revalidatePath(`/artigos/${params.id}`);
     revalidatePath('/categorias/treinamentos');
@@ -136,6 +139,7 @@ export async function DELETE(
     await prisma.attachment.deleteMany({ where: { articleId: params.id } });
     await prisma.article.delete({ where: { id: params.id } });
 
+    invalidateCache();
     revalidatePath('/');
     revalidatePath('/categorias/treinamentos');
     revalidatePath('/categorias/[slug]', 'page');

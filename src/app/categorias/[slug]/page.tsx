@@ -29,9 +29,17 @@ async function ensureVideoTypeMigration() {
     await (prisma as any).$executeRawUnsafe(`
       ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
     `);
+  } catch (_) {}
 
-    // Verifica se já corrigimos vídeos 16:9 antigos que não eram /shorts/
-    const configKey = 'migrated_16_9_videos_v1';
+  try {
+    await (prisma as any).$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SystemConfig" (
+        "key" TEXT PRIMARY KEY,
+        "value" TEXT NOT NULL
+      );
+    `);
+
+    const configKey = 'migrated_16_9_videos_v2';
     const existingFlag = await prisma.systemConfig.findUnique({
       where: { key: configKey },
     });
@@ -53,6 +61,16 @@ async function ensureVideoTypeMigration() {
 
     isVideoTypeMigrated = true;
   } catch (err) {
+    // Fallback direto caso SystemConfig falhe
+    try {
+      await (prisma as any).$executeRawUnsafe(`
+        UPDATE "Article"
+        SET "videoType" = 'training'
+        WHERE "videoUrl" IS NOT NULL
+          AND "videoUrl" NOT ILIKE '%/shorts/%'
+          AND ("videoType" IS NULL OR "videoType" = '');
+      `);
+    } catch (_) {}
     console.warn('Aviso ao verificar migração de videoType:', err);
   }
 }

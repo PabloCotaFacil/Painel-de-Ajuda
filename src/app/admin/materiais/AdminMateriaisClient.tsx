@@ -51,7 +51,7 @@ interface Article {
   summary: string;
   content: string;
   videoUrl?: string | null;
-  videoType?: 'reel' | 'training' | null;
+  videoType?: string | null;
   categoryId: string;
   category: Category;
   attachments: Attachment[];

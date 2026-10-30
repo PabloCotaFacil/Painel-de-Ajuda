@@ -49,7 +49,7 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
               className={`p-6 rounded-3xl transition-all duration-300 flex flex-col justify-between min-h-[200px] hover:-translate-y-1.5 ${
                 cat.isDark
                   ? 'bg-slate-900 text-white shadow-xl hover:shadow-2xl hover:bg-slate-950 border border-slate-800'
-                  : 'bg-white text-slate-800 border border-slate-100 card-float hover:border-blue-300 hover:shadow-xl'
+                  : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-800 card-float hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-xl'
               } ${
                 isSelected
                   ? 'ring-4 ring-cyan-400/60 scale-[1.02]'
@@ -60,7 +60,9 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
                 <div className="flex items-center justify-between">
                   <div
                     className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                      cat.isDark ? 'bg-white/10 text-cyan-300' : 'bg-blue-50 text-blue-600'
+                      cat.isDark
+                        ? 'bg-white/10 text-cyan-300'
+                        : 'bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-cyan-400'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -75,14 +77,14 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
                 <div>
                   <h3
                     className={`font-black text-xs sm:text-sm tracking-tight leading-snug uppercase ${
-                      cat.isDark ? 'text-white' : 'text-slate-900'
+                      cat.isDark ? 'text-white' : 'text-slate-900 dark:text-white'
                     }`}
                   >
                     {cat.name}
                   </h3>
                   <p
                     className={`text-xs mt-1.5 line-clamp-2 leading-relaxed ${
-                      cat.isDark ? 'text-slate-300' : 'text-slate-500'
+                      cat.isDark ? 'text-slate-300' : 'text-slate-500 dark:text-slate-300'
                     }`}
                   >
                     {cat.description}
@@ -92,7 +94,9 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
 
               <div
                 className={`pt-3.5 flex items-center text-xs font-bold gap-1 transition ${
-                  cat.isDark ? 'text-cyan-300 hover:text-cyan-200' : 'text-blue-600 hover:text-blue-800'
+                  cat.isDark
+                    ? 'text-cyan-300 hover:text-cyan-200'
+                    : 'text-blue-600 dark:text-cyan-400 hover:text-blue-800 dark:hover:text-cyan-300'
                 }`}
               >
                 <span>Saiba mais</span>

@@ -9,6 +9,46 @@ import ArticleAttachments from '@/components/ArticleAttachments';
 // Cache inteligente de 60 segundos com ISR para respostas ultrarrápidas
 export const revalidate = 60;
 
+/**
+ * Remove cores escuras fixas (inline style="color: #000..." ou rgb(...) escuros)
+ * que impedem as letras de acompanharem a mudança para o Modo Escuro.
+ */
+function adaptArticleHtmlForTheme(rawHtml: string): string {
+  if (!rawHtml) return '';
+
+  return rawHtml
+    // Remove atributos <font color="#0f172a"> escuros legados
+    .replace(
+      /<font([^>]*?)\scolor=["']?(?:#000000|#000|#0f172a|#1e293b|#334155|#475569|#111827|#1f2937|#374151|#222222|#222|#333333|#333|black|windowtext)["']?([^>]*?)>/gi,
+      '<font$1$2>'
+    )
+    // Limpa declarações inline de color escura/preta e background branco em elementos de texto
+    .replace(/style=(["'])([\s\S]*?)\1/gi, (fullMatch, quote, styleContent: string) => {
+      // Preserva caixas de alerta intencionais (que possuem border-left colorido)
+      if (/border-left/i.test(styleContent)) {
+        return fullMatch;
+      }
+
+      const cleanedStyle = styleContent
+        // Remove cores de texto escuras/pretas (hex, nomes ou rgb/rgba escuros)
+        .replace(
+          /(?:^|;)\s*color\s*:\s*(?:#000000|#000|#0f172a|#1e293b|#334155|#475569|#111827|#1f2937|#374151|#4b5563|#111111|#111|#222222|#222|#333333|#333|#444444|#444|black|windowtext| currentColor|rgb\(\s*(?:[0-9]|[1-8][0-9]|9[0-9]|100)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|105)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|120)\s*\)|rgba\(\s*(?:[0-9]|[1-8][0-9]|9[0-9]|100)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|105)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|120)\s*,[^)]+\))\s*(?:!important)?\s*(?=;|$)/gi,
+          ''
+        )
+        // Remove fundos brancos/claros colados de editores externos
+        .replace(
+          /(?:^|;)\s*background(?:-color)?\s*:\s*(?:#ffffff|#fff|#f8fafc|#f1f5f9|#f9fafb|#f3f4f6|white|rgb\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d\s*\)|rgba\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d\s*,[^)]+\))\s*(?:!important)?\s*(?=;|$)/gi,
+          ''
+        )
+        .trim();
+
+      if (!cleanedStyle || cleanedStyle === ';') {
+        return '';
+      }
+      return `style=${quote}${cleanedStyle}${quote}`;
+    });
+}
+
 export default async function ArticleDetailPage({
   params,
 }: {
@@ -33,6 +73,8 @@ export default async function ArticleDetailPage({
   });
 
   const videoType = (article as any).videoType || 'training';
+  const isHtmlContent = article.content.includes('<') && article.content.includes('>');
+  const adaptedHtml = isHtmlContent ? adaptArticleHtmlForTheme(article.content) : '';
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -92,13 +134,13 @@ export default async function ArticleDetailPage({
         )}
 
         {/* Formatted Content Body */}
-        {article.content.includes('<') && article.content.includes('>') ? (
+        {isHtmlContent ? (
           <div
-            className="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed pt-4 border-t border-slate-100 dark:border-slate-800 article-body"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            className="max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed pt-4 border-t border-slate-100 dark:border-slate-800 article-body"
+            dangerouslySetInnerHTML={{ __html: adaptedHtml }}
           />
         ) : (
-          <div className="prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-4 border-t border-slate-100 dark:border-slate-800 article-body">
+          <div className="max-w-none text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pt-4 border-t border-slate-100 dark:border-slate-800 article-body">
             {article.content}
           </div>
         )}

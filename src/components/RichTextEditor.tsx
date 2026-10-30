@@ -11,8 +11,6 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Heading1,
-  Heading2,
   AlertTriangle,
   CheckCircle2,
   Info,
@@ -168,7 +166,7 @@ export default function RichTextEditor({
     { name: 'Amarelo Escuro', hex: '#d97706' },
     { name: 'Roxo', hex: '#9333ea' },
     { name: 'Cinza', hex: '#475569' },
-    { name: 'Preto Padrão', hex: '#0f172a' },
+    { name: 'Padrão Automático (Claro/Escuro)', hex: 'inherit' },
   ];
 
   const highlights = [
@@ -181,9 +179,9 @@ export default function RichTextEditor({
   ];
 
   return (
-    <div className="border border-slate-300 rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
+    <div className="border border-slate-300 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
       {/* TOOLBAR */}
-      <div className="bg-slate-100/90 border-b border-slate-200 p-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-700 select-none">
+      <div className="bg-slate-100/90 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 select-none">
         {/* TEXT COLORS (VERMELHO, AZUL, ETC.) */}
         <div className="relative">
           <button
@@ -192,7 +190,7 @@ export default function RichTextEditor({
               setShowColorPicker(!showColorPicker);
               setShowHighlightPicker(false);
             }}
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 font-bold text-slate-800 transition"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-slate-800 dark:text-slate-200 transition"
             title="Mudar cor do texto"
           >
             <Palette className="w-3.5 h-3.5 text-rose-600" />
@@ -201,18 +199,25 @@ export default function RichTextEditor({
           </button>
 
           {showColorPicker && (
-            <div className="absolute left-0 top-full mt-1.5 bg-white border border-slate-200 p-2.5 rounded-xl shadow-xl z-30 w-52 grid grid-cols-5 gap-2">
+            <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl shadow-xl z-30 w-52 grid grid-cols-5 gap-2">
               {colors.map((c) => (
                 <button
                   key={c.hex}
                   type="button"
-                  onClick={() => applyTextColor(c.hex)}
-                  className="w-7 h-7 rounded-lg border border-slate-300 hover:scale-110 transition shadow-sm"
-                  style={{ backgroundColor: c.hex }}
+                  onClick={() => {
+                    if (c.hex === 'inherit') {
+                      exec('removeFormat');
+                      setShowColorPicker(false);
+                    } else {
+                      applyTextColor(c.hex);
+                    }
+                  }}
+                  className="w-7 h-7 rounded-lg border border-slate-300 dark:border-slate-600 hover:scale-110 transition shadow-sm"
+                  style={{ backgroundColor: c.hex === 'inherit' ? '#64748b' : c.hex }}
                   title={c.name}
                 />
               ))}
-              <div className="col-span-5 pt-1 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-600">
+              <div className="col-span-5 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 <span>Personalizada:</span>
                 <input
                   type="color"
@@ -233,7 +238,7 @@ export default function RichTextEditor({
               setShowHighlightPicker(!showHighlightPicker);
               setShowColorPicker(false);
             }}
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 font-bold text-slate-800 transition"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold text-slate-800 dark:text-slate-200 transition"
             title="Marca-texto (fundo colorido)"
           >
             <Highlighter className="w-3.5 h-3.5 text-amber-500" />
@@ -241,13 +246,13 @@ export default function RichTextEditor({
           </button>
 
           {showHighlightPicker && (
-            <div className="absolute left-0 top-full mt-1.5 bg-white border border-slate-200 p-2.5 rounded-xl shadow-xl z-30 w-44 space-y-1">
+            <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl shadow-xl z-30 w-44 space-y-1">
               {highlights.map((h) => (
                 <button
                   key={h.hex}
                   type="button"
                   onClick={() => applyHighlightColor(h.hex)}
-                  className="w-full text-left px-2 py-1 rounded text-xs font-bold flex items-center space-x-2 hover:opacity-80"
+                  className="w-full text-left px-2 py-1 rounded text-xs font-bold flex items-center space-x-2 hover:opacity-80 text-slate-800 dark:text-slate-200"
                 >
                   <span
                     className="w-4 h-4 rounded border border-slate-300 inline-block"
@@ -260,13 +265,13 @@ export default function RichTextEditor({
           )}
         </div>
 
-        <div className="h-5 w-px bg-slate-300 mx-0.5" />
+        <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
         {/* FORMAT BUTTONS */}
         <button
           type="button"
           onClick={() => exec('bold')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm font-black transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm font-black transition"
           title="Negrito (Ctrl+B)"
         >
           <Bold className="w-4 h-4" />
@@ -274,7 +279,7 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('italic')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm italic transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm italic transition"
           title="Itálico (Ctrl+I)"
         >
           <Italic className="w-4 h-4" />
@@ -282,7 +287,7 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('underline')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm underline transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm underline transition"
           title="Sublinhado (Ctrl+U)"
         >
           <Underline className="w-4 h-4" />
@@ -290,19 +295,19 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('strikeThrough')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm line-through transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm line-through transition"
           title="Tachado"
         >
           <Strikethrough className="w-4 h-4" />
         </button>
 
-        <div className="h-5 w-px bg-slate-300 mx-0.5" />
+        <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
         {/* HEADINGS */}
         <button
           type="button"
           onClick={() => exec('formatBlock', '<h2>')}
-          className="px-2 py-1 rounded-lg hover:bg-white hover:shadow-sm font-extrabold text-xs transition"
+          className="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm font-extrabold text-xs transition"
           title="Título Principal"
         >
           H1
@@ -310,7 +315,7 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('formatBlock', '<h3>')}
-          className="px-2 py-1 rounded-lg hover:bg-white hover:shadow-sm font-bold text-xs transition"
+          className="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm font-bold text-xs transition"
           title="Subtítulo"
         >
           H2
@@ -318,19 +323,19 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('formatBlock', '<p>')}
-          className="px-2 py-1 rounded-lg hover:bg-white hover:shadow-sm font-medium text-xs transition"
+          className="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm font-medium text-xs transition"
           title="Parágrafo normal"
         >
           Normal
         </button>
 
-        <div className="h-5 w-px bg-slate-300 mx-0.5" />
+        <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
         {/* LISTS */}
         <button
           type="button"
           onClick={() => exec('insertUnorderedList')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition"
           title="Lista com marcadores"
         >
           <List className="w-4 h-4" />
@@ -338,19 +343,19 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('insertOrderedList')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition"
           title="Lista numerada"
         >
           <ListOrdered className="w-4 h-4" />
         </button>
 
-        <div className="h-5 w-px bg-slate-300 mx-0.5" />
+        <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
         {/* ALIGN */}
         <button
           type="button"
           onClick={() => exec('justifyLeft')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition"
           title="Alinhar à esquerda"
         >
           <AlignLeft className="w-4 h-4" />
@@ -358,7 +363,7 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('justifyCenter')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition"
           title="Centralizar"
         >
           <AlignCenter className="w-4 h-4" />
@@ -366,17 +371,17 @@ export default function RichTextEditor({
         <button
           type="button"
           onClick={() => exec('justifyRight')}
-          className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm transition"
+          className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition"
           title="Alinhar à direita"
         >
           <AlignRight className="w-4 h-4" />
         </button>
 
-        <div className="h-5 w-px bg-slate-300 mx-0.5" />
+        <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 mx-0.5" />
 
         {/* CAIXAS DE ALERTA RÁPIDAS */}
-        <div className="flex items-center space-x-1 bg-white px-2 py-1 rounded-lg border border-slate-200">
-          <span className="text-[10px] font-extrabold text-slate-500 uppercase">Caixas:</span>
+        <div className="flex items-center space-x-1 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+          <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase">Caixas:</span>
           <button
             type="button"
             onClick={() => insertAlertBox('danger')}
@@ -415,7 +420,7 @@ export default function RichTextEditor({
           <button
             type="button"
             onClick={() => exec('removeFormat')}
-            className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-800 transition"
+            className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition"
             title="Limpar formatação da seleção"
           >
             <RotateCcw className="w-4 h-4" />
@@ -424,7 +429,9 @@ export default function RichTextEditor({
             type="button"
             onClick={handleToggleCodeMode}
             className={`px-2.5 py-1 rounded-lg font-bold text-xs transition flex items-center space-x-1 ${
-              showCodeMode ? 'bg-blue-700 text-white' : 'hover:bg-white text-slate-700'
+              showCodeMode
+                ? 'bg-blue-700 text-white'
+                : 'hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
             }`}
             title="Alternar entre modo Visual e Código HTML"
           >
@@ -442,7 +449,7 @@ export default function RichTextEditor({
             setHtmlContent(e.target.value);
             onChange(e.target.value);
           }}
-          className="w-full min-h-[350px] p-4 font-mono text-xs text-slate-800 bg-slate-900 text-emerald-400 focus:outline-none"
+          className="w-full min-h-[350px] p-4 font-mono text-xs bg-slate-900 text-emerald-400 focus:outline-none"
           placeholder="Código HTML..."
         />
       ) : (
@@ -452,7 +459,7 @@ export default function RichTextEditor({
           suppressContentEditableWarning
           onInput={handleInput}
           onBlur={handleInput}
-          className="min-h-[350px] max-h-[600px] overflow-y-auto p-5 text-sm sm:text-base text-slate-900 focus:outline-none leading-relaxed prose prose-slate max-w-none article-body"
+          className="min-h-[350px] max-h-[600px] overflow-y-auto p-5 text-sm sm:text-base text-slate-900 dark:text-slate-100 focus:outline-none leading-relaxed max-w-none article-body"
           style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
           data-placeholder={placeholder}
         />

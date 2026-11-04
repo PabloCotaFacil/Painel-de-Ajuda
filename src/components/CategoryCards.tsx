@@ -1,43 +1,79 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Home, Layers, Video } from 'lucide-react';
+import { Layers, Home, Video, FolderOpen } from 'lucide-react';
 
 interface CategoryCardsProps {
   activeSlug?: string;
   floating?: boolean;
 }
 
+interface DynamicCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  icon?: string | null;
+}
+
 export default function CategoryCards({ activeSlug, floating = false }: CategoryCardsProps) {
-  const categories = [
-    {
-      name: 'TODAS AS CATEGORIAS',
-      slug: 'all',
-      description: 'Acesse todas as esteiras, produtos e manuais disponíveis.',
-      icon: Layers,
-      isDark: true,
-    },
-    {
-      name: 'CRÉDITO IMOBILIÁRIO',
-      slug: 'imobiliario',
-      description: 'Financiamento habitacional, Home Equity e repasse Caixa/Itaú/BB.',
-      icon: Home,
-      isDark: false,
-    },
-    {
-      name: 'TREINAMENTOS E VIDEOAULAS',
-      slug: 'treinamentos',
-      description: 'Vídeos de treinamento, videoaulas e tutoriais operacionais.',
-      icon: Video,
-      isDark: false,
-    },
-  ];
+  const [dbCategories, setDbCategories] = useState<DynamicCategory[]>([]);
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDbCategories(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const allCard = {
+    name: 'TODAS AS CATEGORIAS',
+    slug: 'all',
+    description: 'Acesse todas as esteiras, produtos e manuais disponíveis.',
+    icon: Layers,
+    isDark: true,
+  };
+
+  const dynamicCards = (dbCategories.length > 0
+    ? dbCategories
+    : [
+        {
+          name: 'CRÉDITO IMOBILIÁRIO',
+          slug: 'imobiliario',
+          description: 'Financiamento habitacional, Home Equity e repasse Caixa/Itaú/BB.',
+          icon: 'home',
+        },
+        {
+          name: 'TREINAMENTOS E VIDEOAULAS',
+          slug: 'treinamentos',
+          description: 'Vídeos de treinamento, videoaulas e tutoriais operacionais.',
+          icon: 'video',
+        },
+      ]
+  ).map((cat) => ({
+    name: cat.name.toUpperCase(),
+    slug: cat.slug,
+    description: cat.description || 'Consulte regras e procedimentos operacionais.',
+    icon:
+      cat.slug === 'treinamentos'
+        ? Video
+        : cat.slug === 'imobiliario'
+        ? Home
+        : FolderOpen,
+    isDark: false,
+  }));
+
+  const cards = [allCard, ...dynamicCards];
 
   return (
     <section className={floating ? '-mt-4 sm:-mt-6 relative z-20 mb-8' : 'py-4'}>
-      {/* Grid of Bevi-Ajuda Style Category Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categories.map((cat) => {
+        {cards.map((cat) => {
           const Icon = cat.icon;
           const isSelected = activeSlug === cat.slug || (!activeSlug && cat.slug === 'all');
           const targetUrl = cat.slug === 'all' ? '/' : `/categorias/${cat.slug}`;
@@ -99,7 +135,7 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
                     : 'text-blue-600 dark:text-cyan-400 hover:text-blue-800 dark:hover:text-cyan-300'
                 }`}
               >
-                <span>Saiba mais</span>
+                <span>Acessar</span>
                 <span className="text-sm">→</span>
               </div>
             </Link>

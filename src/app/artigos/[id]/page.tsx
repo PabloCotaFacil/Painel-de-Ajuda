@@ -1,10 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Video } from 'lucide-react';
+import { ArrowLeft, Calendar, Video, Clock } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import AdminArticleEditButton from '@/components/AdminArticleEditButton';
 import ArticleAttachments from '@/components/ArticleAttachments';
+import ArticleShareButton from '@/components/ArticleShareButton';
+import ArticleReadingProgress from '@/components/ArticleReadingProgress';
 
 // Cache inteligente de 60 segundos com ISR para respostas ultrarrápidas
 export const revalidate = 60;
@@ -17,25 +19,20 @@ function adaptArticleHtmlForTheme(rawHtml: string): string {
   if (!rawHtml) return '';
 
   return rawHtml
-    // Remove atributos <font color="#0f172a"> escuros legados
     .replace(
       /<font([^>]*?)\scolor=["']?(?:#000000|#000|#0f172a|#1e293b|#334155|#475569|#111827|#1f2937|#374151|#222222|#222|#333333|#333|black|windowtext)["']?([^>]*?)>/gi,
       '<font$1$2>'
     )
-    // Limpa declarações inline de color escura/preta e background branco em elementos de texto
     .replace(/style=(["'])([\s\S]*?)\1/gi, (fullMatch, quote, styleContent: string) => {
-      // Preserva caixas de alerta intencionais (que possuem border-left colorido)
       if (/border-left/i.test(styleContent)) {
         return fullMatch;
       }
 
       const cleanedStyle = styleContent
-        // Remove cores de texto escuras/pretas (hex, nomes ou rgb/rgba escuros)
         .replace(
           /(?:^|;)\s*color\s*:\s*(?:#000000|#000|#0f172a|#1e293b|#334155|#475569|#111827|#1f2937|#374151|#4b5563|#111111|#111|#222222|#222|#333333|#333|#444444|#444|black|windowtext| currentColor|rgb\(\s*(?:[0-9]|[1-8][0-9]|9[0-9]|100)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|105)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|120)\s*\)|rgba\(\s*(?:[0-9]|[1-8][0-9]|9[0-9]|100)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|105)\s*,\s*(?:[0-9]|[1-8][0-9]|9[0-9]|120)\s*,[^)]+\))\s*(?:!important)?\s*(?=;|$)/gi,
           ''
         )
-        // Remove fundos brancos/claros colados de editores externos
         .replace(
           /(?:^|;)\s*background(?:-color)?\s*:\s*(?:#ffffff|#fff|#f8fafc|#f1f5f9|#f9fafb|#f3f4f6|white|rgb\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d\s*\)|rgba\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d\s*,[^)]+\))\s*(?:!important)?\s*(?=;|$)/gi,
           ''
@@ -47,6 +44,13 @@ function adaptArticleHtmlForTheme(rawHtml: string): string {
       }
       return `style=${quote}${cleanedStyle}${quote}`;
     });
+}
+
+function calculateReadingTime(text: string): number {
+  if (!text) return 1;
+  const clean = text.replace(/<[^>]*>/g, ' ');
+  const words = clean.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(words / 180));
 }
 
 export default async function ArticleDetailPage({
@@ -72,13 +76,16 @@ export default async function ArticleDetailPage({
     year: 'numeric',
   });
 
+  const readingTime = calculateReadingTime(article.content);
   const videoType = (article as any).videoType || 'training';
   const isHtmlContent = article.content.includes('<') && article.content.includes('>');
   const adaptedHtml = isHtmlContent ? adaptArticleHtmlForTheme(article.content) : '';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Top Navigation & Admin Edit Button */}
+    <div className="max-w-4xl mx-auto space-y-8 relative">
+      <ArticleReadingProgress />
+
+      {/* Top Navigation, Admin Edit & Share Buttons */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`/categorias/${article.category.slug}`}
@@ -88,13 +95,16 @@ export default async function ArticleDetailPage({
           <span>Voltar para {article.category.name}</span>
         </Link>
 
-        <AdminArticleEditButton articleId={article.id} />
+        <div className="flex items-center space-x-2">
+          <ArticleShareButton title={article.title} summary={article.summary} />
+          <AdminArticleEditButton articleId={article.id} />
+        </div>
       </div>
 
       {/* Main Article Header Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800 card-shadow space-y-6 transition-colors">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 uppercase">
               {article.category.name}
             </span>
@@ -106,7 +116,12 @@ export default async function ArticleDetailPage({
                 </span>
               </span>
             )}
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">
+              <Clock className="w-3 h-3 text-cyan-500" />
+              <span>{readingTime} min de leitura</span>
+            </span>
           </div>
+
           <div className="flex items-center text-xs text-slate-400 gap-1.5">
             <Calendar className="w-4 h-4 text-cyan-500" />
             <span>Atualizado em {formattedDate}</span>

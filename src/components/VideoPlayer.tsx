@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Video, Loader2 } from 'lucide-react';
+import { Play, Video, Loader2 } from 'lucide-react';
 
 interface VideoPlayerProps {
   url: string;
@@ -21,11 +21,9 @@ export function extractVimeoInfo(rawUrl: string): { id: string; hash?: string } 
   const trimmed = rawUrl.trim();
   if (!trimmed.includes('vimeo.com')) return null;
 
-  // Extrai parâmetro ?h= se existir na query string
   const queryHashMatch = trimmed.match(/[?&]h=([a-zA-Z0-9]+)/);
   const queryHash = queryHashMatch ? queryHashMatch[1] : undefined;
 
-  // Suporta vimeo.com/123456, vimeo.com/123456/hash, player.vimeo.com/video/123456, vimeo.com/manage/videos/123456
   const pathMatch = trimmed.match(
     /vimeo\.com\/(?:manage\/videos\/|video\/|channels\/[^\/]+\/|groups\/[^\/]+\/videos\/|album\/\d+\/video\/)?(\d+)(?:\/([a-zA-Z0-9]+))?/
   );
@@ -81,12 +79,12 @@ export function getEmbedInfo(
     };
   }
 
-  // 2. Vimeo (Otimizado com dnt=1 e preload=auto para carregamento ultrarrápido + suporte a vídeos não listados com hash)
+  // 2. Vimeo
   const vimeo = extractVimeoInfo(trimmed);
   if (vimeo) {
     const params = new URLSearchParams();
     if (vimeo.hash) params.set('h', vimeo.hash);
-    params.set('dnt', '1'); // Desativa rastreamento pesado do Vimeo (carrega até 3x mais rápido)
+    params.set('dnt', '1');
     params.set('title', '0');
     params.set('byline', '0');
     params.set('portrait', '0');
@@ -104,113 +102,97 @@ export function getEmbedInfo(
     };
   }
 
-  // 3. Loom
-  const loomMatch = trimmed.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/);
-  if (loomMatch && loomMatch[1]) {
-    return {
-      type: 'iframe',
-      provider: 'other',
-      src: `https://www.loom.com/embed/${loomMatch[1]}`,
-    };
-  }
-
-  // 4. Google Drive
-  const gdriveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (gdriveMatch && gdriveMatch[1]) {
-    return {
-      type: 'iframe',
-      provider: 'other',
-      src: `https://drive.google.com/file/d/${gdriveMatch[1]}/preview`,
-    };
-  }
-
-  // 5. Iframe já formatado
-  if (trimmed.includes('/embed/') || trimmed.includes('player.vimeo.com')) {
-    return { type: 'iframe', provider: 'other', src: trimmed };
-  }
-
-  // 6. Arquivo de vídeo direto (MP4 / WebM)
-  return { type: 'video', provider: 'other', src: trimmed };
+  return {
+    type: 'video',
+    provider: 'other',
+    src: trimmed,
+  };
 }
 
-export default function VideoPlayer({
-  url,
-  title = 'Vídeo de Treinamento',
-  videoType,
-}: VideoPlayerProps) {
-  const [iframeLoaded, setIframeLoaded] = useState(false);
+export default function VideoPlayer({ url, title, videoType }: VideoPlayerProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!url) return null;
 
-  const trimmedUrl = url.trim();
-  const isShorts =
-    videoType === 'reel'
-      ? true
-      : videoType === 'training'
-      ? false
-      : trimmedUrl.includes('/shorts/');
+  const isReel = videoType === 'reel';
+  const embed = getEmbedInfo(url, { autoplay: true });
+  const poster = getVideoThumbnail(url);
 
-  const embed = getEmbedInfo(trimmedUrl);
+  const handleStartPlay = () => {
+    setIsLoading(true);
+    setIsPlaying(true);
+  };
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl my-6">
-      <div className="bg-slate-900/90 px-4 py-2.5 flex items-center justify-between border-b border-slate-800 text-xs">
-        <div className="flex items-center space-x-2 text-cyan-400 font-bold">
-          <Video className="w-4 h-4" />
-          <span>
-            {isShorts
-              ? 'Pílula Rápida / Reel Vertical (9:16)'
-              : 'Reprodutor de Treinamento Completo (16:9)'}
-          </span>
-        </div>
-        <span className="text-[11px] text-slate-400 truncate max-w-xs">{title}</span>
-      </div>
-
-      <div
-        className={
-          isShorts
-            ? 'p-4 sm:p-6 bg-slate-950 flex items-center justify-center'
-            : 'relative w-full aspect-video bg-black flex items-center justify-center'
-        }
-      >
+    <div
+      className={`relative mx-auto overflow-hidden bg-slate-950 rounded-2xl shadow-xl border border-slate-800 ${
+        isReel
+          ? 'max-w-xs aspect-[9/16] w-full'
+          : 'w-full aspect-video'
+      }`}
+    >
+      {/* Fachada Facade (Carrega apenas o poster leve inicialmente para máxima velocidade) */}
+      {!isPlaying && (
         <div
-          className={
-            isShorts
-              ? 'relative w-full max-w-[340px] aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl'
-              : 'relative w-full h-full'
-          }
+          onClick={handleStartPlay}
+          className="absolute inset-0 z-20 cursor-pointer group flex flex-col items-center justify-center bg-slate-900"
         >
+          {poster ? (
+            <img
+              src={poster}
+              alt={title || 'Capa do vídeo'}
+              className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-95 group-hover:scale-105 transition-all duration-300"
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900" />
+          )}
+
+          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+
+          {/* Botão Play estilizado */}
+          <div className="relative z-10 w-16 h-16 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-115 group-hover:bg-blue-600 transition-all duration-200 ring-4 ring-white/20">
+            <Play className="w-7 h-7 ml-1 fill-white" />
+          </div>
+
+          <div className="relative z-10 mt-3 text-center px-4">
+            <span className="text-xs font-black text-white bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-sm inline-block">
+              Clique para assistir
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Reprodutor Iframe / Video após interação */}
+      {isPlaying && (
+        <>
+          {isLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950">
+              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+            </div>
+          )}
+
           {embed.type === 'iframe' ? (
-            <>
-              {!iframeLoaded && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-slate-400 z-10 pointer-events-none">
-                  <Loader2 className="w-7 h-7 text-cyan-400 animate-spin mb-2" />
-                  <span className="text-xs font-semibold">Carregando reprodutor de vídeo...</span>
-                </div>
-              )}
-              <iframe
-                src={embed.src}
-                title={title}
-                loading="eager"
-                onLoad={() => setIframeLoaded(true)}
-                className="w-full h-full border-0 relative z-20"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                allowFullScreen
-              />
-            </>
+            <iframe
+              src={embed.src}
+              title={title || 'Vídeo de Treinamento'}
+              onLoad={() => setIsLoading(false)}
+              className="w-full h-full border-0 absolute inset-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
           ) : (
             <video
               src={embed.src}
               controls
-              playsInline
-              className="w-full h-full object-contain"
-              preload="metadata"
-            >
-              Seu navegador não suporta a reprodução deste formato de vídeo.
-            </video>
+              autoPlay
+              onLoadedData={() => setIsLoading(false)}
+              className="w-full h-full object-contain absolute inset-0"
+            />
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

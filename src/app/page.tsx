@@ -7,15 +7,14 @@ import { getFastArticlesList, getFastHeroBanner } from '@/lib/cache';
 import { smartSearchArticles } from '@/lib/search';
 import Link from 'next/link';
 import {
-  Sparkles,
   Search,
   Info,
   ChevronRight,
   Layers,
 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR com revalidação a cada 30 segundos: entrega imediata do cache de borda (CDN)
+export const revalidate = 30;
 
 export default async function HomePage({
   searchParams,
@@ -24,7 +23,7 @@ export default async function HomePage({
 }) {
   const query = searchParams.q || '';
 
-  // Executa todas as leituras em paralelo usando cache em memória (resposta em < 2ms)
+  // Executa todas as leituras em paralelo usando cache em memória
   const [, heroBanner, allArticles] = await Promise.all([
     getOrSeedCategories(),
     getFastHeroBanner(),
@@ -85,7 +84,7 @@ export default async function HomePage({
               </span>
               {heroBanner.badgeText && (
                 <div className="inline-flex items-center space-x-1.5 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] text-cyan-200 font-bold border border-white/20">
-                  <Sparkles className="w-3 h-3 shrink-0 text-cyan-300" />
+                  <span className="w-2 h-2 rounded-full bg-cyan-300 inline-block animate-pulse" />
                   <span>{heroBanner.badgeText}</span>
                 </div>
               )}
@@ -118,16 +117,11 @@ export default async function HomePage({
       {/* ROLAGEM AUTOMÁTICA VISUAL PARA A BUSCA */}
       <SearchResultsAnchor query={query} />
 
-      {/* ============================================================ */}
-      {/* CARDS DE CATEGORIAS FLUTUANTES (IDÊNTICO AO BEVI AJUDA)        */}
-      {/* ============================================================ */}
+      {/* CARDS DE CATEGORIAS FLUTUANTES (DINÂMICOS DO BANCO) */}
       <CategoryCards floating={true} />
 
-      {/* ============================================================ */}
-      {/* SEÇÃO "ÚLTIMAS ATUALIZAÇÕES" / RESULTADOS DA PESQUISA         */}
-      {/* ============================================================ */}
+      {/* SEÇÃO "ÚLTIMAS ATUALIZAÇÕES" / RESULTADOS DA PESQUISA */}
       <section id="materiais-section" className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 card-shadow space-y-6 scroll-mt-28 transition-colors">
-        {/* BANNER VISUAL DE FEEDBACK DA BUSCA */}
         {query && (
           <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
             <div className="flex items-center space-x-3.5">
@@ -136,7 +130,7 @@ export default async function HomePage({
               </div>
               <div>
                 <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                  Pesquisa inteligente por: <span className="text-blue-600 dark:text-blue-400 font-black">"{query}"</span>
+                  Pesquisa inteligente por: <span className="text-blue-600 dark:text-blue-400 font-black">&quot;{query}&quot;</span>
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
                   {articles.length === 0
@@ -178,7 +172,7 @@ export default async function HomePage({
           </Link>
         </div>
 
-        {/* LISTA RÁPIDA EM 2 COLUNAS ESTILO BEVI AJUDA */}
+        {/* LISTA RÁPIDA EM 2 COLUNAS */}
         {articles.length > 0 && !query && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 pb-6 border-b border-slate-100 dark:border-slate-800">
             {articles.slice(0, 8).map((art) => (
@@ -201,7 +195,7 @@ export default async function HomePage({
           </div>
         )}
 
-        {/* GALERIA COMPLETA DE CARDS COM RESUMOS E DOWNLOADS */}
+        {/* GALERIA COMPLETA DE CARDS */}
         <div>
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />

@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import './globals.css';
 import Header from '@/components/Header';
 import NavigationProgressBar from '@/components/NavigationProgressBar';
+import SupportHelpDesk from '@/components/SupportHelpDesk';
 
 export const metadata: Metadata = {
   title: 'Painel Operacional | CotaFácil',
@@ -49,7 +50,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col justify-between transition-colors">
+      <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col justify-between transition-colors relative">
         <Suspense fallback={null}>
           <NavigationProgressBar />
         </Suspense>
@@ -57,6 +58,9 @@ export default function RootLayout({
           <Header />
           <main className="max-w-[1440px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">{children}</main>
         </div>
+
+        {/* Botão Flutuante de Apoio & Suporte CotaFácil */}
+        <SupportHelpDesk />
 
         {/* Footer */}
         <footer className="bg-slate-900 dark:bg-slate-950 text-slate-400 text-xs py-8 border-t border-slate-800 mt-12 transition-colors">

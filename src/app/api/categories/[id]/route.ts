@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 import { invalidateCache } from '@/lib/cache';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
@@ -15,7 +18,7 @@ export async function PUT(
 
     const { name, slug, description, icon } = await request.json();
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
     }
 
@@ -27,6 +30,21 @@ export async function PUT(
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
+    // Verifica se já existe outra categoria com esse mesmo slug
+    const existing = await prisma.category.findFirst({
+      where: {
+        slug: finalSlug,
+        NOT: { id: params.id },
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `Já existe outra categoria com o identificador "${finalSlug}". Escolha outro slug.` },
+        { status: 400 }
+      );
+    }
+
     const updated = await prisma.category.update({
       where: { id: params.id },
       data: {
@@ -34,6 +52,11 @@ export async function PUT(
         slug: finalSlug,
         description: description ? description.trim() : null,
         icon: icon || 'folder',
+      },
+      include: {
+        _count: {
+          select: { articles: true },
+        },
       },
     });
 

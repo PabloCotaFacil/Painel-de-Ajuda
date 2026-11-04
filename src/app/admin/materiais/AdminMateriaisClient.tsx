@@ -27,6 +27,7 @@ import {
   RefreshCw,
   MonitorPlay,
   Smartphone,
+  MessageCircle,
 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -44,6 +45,11 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  description?: string | null;
+  icon?: string | null;
+  _count?: {
+    articles?: number;
+  };
 }
 
 interface Article {
@@ -69,8 +75,8 @@ export default function AdminMateriaisClient({
 }) {
   const router = useRouter();
 
-  // Navigation tab state: 'list' (Materiais Disponíveis), 'editor' (Criar/Editar), 'banner' (Banner da Home), 'reels' (Pílulas Rápidas), 'password' (Segurança)
-  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banner' | 'reels' | 'password'>(
+  // Navigation tab state: 'list' (Materiais Disponíveis), 'editor' (Criar/Editar), 'categories' (Categorias & Esteiras), 'banner' (Banner da Home), 'reels' (Pílulas Rápidas), 'support' (WhatsApp Suporte), 'password' (Segurança)
+  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banner' | 'reels' | 'support' | 'password'>(
     initialArticles.length > 0 ? 'list' : 'editor'
   );
 
@@ -220,6 +226,76 @@ export default function AdminMateriaisClient({
       }
     }
   }, [initialArticles]);
+
+  // Recarrega lista completa de categorias atualizadas
+  const fetchFreshCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCategories(data);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao recarregar categorias:', err);
+    }
+  };
+
+  // Support WhatsApp Settings State
+  const [supportPhone, setSupportPhone] = useState('5517997750058');
+  const [supportMessage, setSupportMessage] = useState(
+    'Olá! Estou consultando o Hub de Apoio Operacional CotaFácil e gostaria de tirar uma dúvida sobre uma esteira de crédito imobiliário.'
+  );
+  const [supportHelpDeskUrl, setSupportHelpDeskUrl] = useState('');
+  const [savingSupport, setSavingSupport] = useState(false);
+  const [supportFeedback, setSupportFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Load support settings
+  useEffect(() => {
+    fetch('/api/support-config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.whatsappNumber) {
+          setSupportPhone(data.whatsappNumber);
+          if (data.defaultMessage) setSupportMessage(data.defaultMessage);
+          if (data.helpDeskUrl !== undefined) setSupportHelpDeskUrl(data.helpDeskUrl);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveSupport = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSavingSupport(true);
+    setSupportFeedback(null);
+    try {
+      const res = await fetch('/api/support-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          whatsappNumber: supportPhone,
+          defaultMessage: supportMessage,
+          helpDeskUrl: supportHelpDeskUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao salvar configuração de suporte');
+      }
+      setSupportFeedback({
+        type: 'success',
+        text: 'Número e configurações do WhatsApp de suporte atualizados com sucesso!',
+      });
+    } catch (err: any) {
+      setSupportFeedback({
+        type: 'error',
+        text: err.message || 'Erro ao salvar configuração de suporte.',
+      });
+    } finally {
+      setSavingSupport(false);
+    }
+  };
 
   // Ensure categories are loaded if initial list was empty
   useEffect(() => {
@@ -790,6 +866,18 @@ export default function AdminMateriaisClient({
         >
           <Sparkles className="w-4 h-4 text-cyan-400" />
           <span>⚡ Pílulas & Reels (9:16)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('support')}
+          className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-2 transition ${
+            activeTab === 'support'
+              ? 'bg-[#25D366] text-white shadow-md'
+              : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <MessageCircle className="w-4 h-4 text-emerald-600" />
+          <span>Suporte WhatsApp</span>
         </button>
 
         <button
@@ -1897,6 +1985,120 @@ export default function AdminMateriaisClient({
               router.refresh();
             }}
           />
+        </div>
+      )}
+
+      {/* TAB: CONFIGURAÇÃO DO WHATSAPP DE SUPORTE */}
+      {activeTab === 'support' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+            <div>
+              <div className="flex items-center space-x-2 text-emerald-600 font-extrabold text-xs uppercase tracking-wider mb-1">
+                <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                <span>Atendimento & Apoio Matriz</span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                Configuração do Botão WhatsApp de Suporte
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Altere o número de telefone e a mensagem que aparecem no botão flutuante em todas as páginas do site.
+              </p>
+            </div>
+
+            {/* Teste Imediato */}
+            {supportPhone && (
+              <a
+                href={`https://wa.me/${supportPhone.replace(/\D/g, '').startsWith('55') ? supportPhone.replace(/\D/g, '') : `55${supportPhone.replace(/\D/g, '')}`}?text=${encodeURIComponent(supportMessage)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 font-extrabold px-3.5 py-2 rounded-xl text-xs transition shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Testar Conversa no WhatsApp</span>
+              </a>
+            )}
+          </div>
+
+          {supportFeedback && (
+            <div
+              className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-2 ${
+                supportFeedback.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                  : 'bg-rose-50 text-rose-800 border border-rose-300'
+              }`}
+            >
+              {supportFeedback.type === 'success' ? (
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{supportFeedback.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveSupport} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  Número do WhatsApp de Suporte *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: 17997750058 ou 5517997750058"
+                  value={supportPhone}
+                  onChange={(e) => setSupportPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  required
+                />
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Digite com DDD (ex: 17997750058). O código 55 do Brasil será formatado automaticamente.
+                </span>
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                  Link de Abertura de Ticket / Chamado (Opcional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="Ex: https://suporte.cotafacil.com.br/abrir-chamado"
+                  value={supportHelpDeskUrl}
+                  onChange={(e) => setSupportHelpDeskUrl(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  Se preenchido, exibirá um botão secundário &quot;Abrir Chamado / Ticket&quot; no card flutuante.
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                Mensagem Padrão Inicial
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Ex: Olá! Estou consultando o Hub de Apoio Operacional CotaFácil e gostaria de tirar uma dúvida sobre uma esteira de crédito imobiliário."
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+              />
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                Texto que já virá digitado quando o franqueado clicar em &quot;Iniciar Conversa no WhatsApp&quot;.
+              </span>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={savingSupport}
+                className="px-6 py-2.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <MessageCircle className="w-4 h-4 text-white" />
+                <span>{savingSupport ? 'Salvando...' : 'Salvar Configurações de Suporte'}</span>
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

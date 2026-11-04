@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 
 function WhatsAppIcon({ className = 'w-9 h-9' }: { className?: string }) {
@@ -18,21 +18,38 @@ function WhatsAppIcon({ className = 'w-9 h-9' }: { className?: string }) {
 }
 
 interface SupportHelpDeskProps {
-  whatsappNumber?: string; // ex: '5511999999999'
-  helpDeskUrl?: string;
+  initialWhatsappNumber?: string;
+  initialDefaultMessage?: string;
+  initialHelpDeskUrl?: string;
 }
 
 export default function SupportHelpDesk({
-  whatsappNumber = '5517997750058',
-  helpDeskUrl,
+  initialWhatsappNumber = '5517997750058',
+  initialDefaultMessage = 'Olá! Estou consultando o Hub de Apoio Operacional CotaFácil e gostaria de tirar uma dúvida sobre uma esteira de crédito imobiliário.',
+  initialHelpDeskUrl = '',
 }: SupportHelpDeskProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsappNumber);
+  const [defaultMessage, setDefaultMessage] = useState(initialDefaultMessage);
+  const [helpDeskUrl, setHelpDeskUrl] = useState(initialHelpDeskUrl);
+
+  // Busca configurações dinâmicas atualizadas pelo painel admin
+  useEffect(() => {
+    fetch('/api/support-config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.whatsappNumber) {
+          setWhatsappNumber(data.whatsappNumber);
+          if (data.defaultMessage) setDefaultMessage(data.defaultMessage);
+          if (data.helpDeskUrl !== undefined) setHelpDeskUrl(data.helpDeskUrl);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const cleanPhone = whatsappNumber.replace(/\D/g, '');
-  const defaultMessage = encodeURIComponent(
-    'Olá! Estou consultando o Hub de Apoio Operacional CotaFácil e gostaria de tirar uma dúvida sobre uma esteira de crédito imobiliário.'
-  );
-  const waLink = `https://wa.me/${cleanPhone}?text=${defaultMessage}`;
+  const encodedMessage = encodeURIComponent(defaultMessage);
+  const waLink = `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`}?text=${encodedMessage}`;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 select-none flex flex-col items-end">

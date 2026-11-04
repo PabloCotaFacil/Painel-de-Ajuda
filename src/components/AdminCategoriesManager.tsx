@@ -12,6 +12,7 @@ import {
   Layers,
   ArrowRight,
   FolderOpen,
+  FileText,
 } from 'lucide-react';
 
 export interface CategoryItem {
@@ -27,11 +28,11 @@ export interface CategoryItem {
 
 interface AdminCategoriesManagerProps {
   categories: CategoryItem[];
-  onCategoriesChanged: () => void;
+  onCategoriesChanged?: () => void;
 }
 
 export default function AdminCategoriesManager({
-  categories,
+  categories = [],
   onCategoriesChanged,
 }: AdminCategoriesManagerProps) {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -95,7 +96,9 @@ export default function AdminCategoriesManager({
       });
 
       resetForm();
-      onCategoriesChanged();
+      if (typeof onCategoriesChanged === 'function') {
+        onCategoriesChanged();
+      }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erro ao processar requisição.' });
     } finally {
@@ -104,8 +107,16 @@ export default function AdminCategoriesManager({
   };
 
   const handleDelete = async (cat: CategoryItem) => {
+    const articleCount = cat._count?.articles ?? 0;
+    if (articleCount > 0) {
+      alert(
+        `Não é possível excluir a categoria "${cat.name}" porque existem ${articleCount} material(is) vinculado(s) a ela.\n\nEdite ou mova os materiais para outra categoria antes de excluir.`
+      );
+      return;
+    }
+
     const confirmDelete = window.confirm(
-      `Tem certeza que deseja excluir a categoria "${cat.name}"?\n(Não poderá ser desfeita)`
+      `Tem certeza que deseja excluir a categoria "${cat.name}"?\n(Esta ação não poderá ser desfeita)`
     );
     if (!confirmDelete) return;
 
@@ -130,7 +141,9 @@ export default function AdminCategoriesManager({
         resetForm();
       }
 
-      onCategoriesChanged();
+      if (typeof onCategoriesChanged === 'function') {
+        onCategoriesChanged();
+      }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erro ao excluir categoria.' });
     } finally {
@@ -174,7 +187,7 @@ export default function AdminCategoriesManager({
             <button
               type="button"
               onClick={resetForm}
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition self-start sm:self-auto"
+              className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition self-start sm:self-auto cursor-pointer"
             >
               Cancelar Edição
             </button>
@@ -243,7 +256,7 @@ export default function AdminCategoriesManager({
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center space-x-2"
+              className="px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-extrabold rounded-xl text-xs transition shadow flex items-center space-x-2 cursor-pointer disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4 text-cyan-300" />
               <span>{saving ? 'Salvando...' : editingCatId ? 'Atualizar Categoria' : 'Adicionar Categoria'}</span>
@@ -264,60 +277,83 @@ export default function AdminCategoriesManager({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className="p-5 rounded-2xl border border-slate-200 hover:border-blue-400 transition flex flex-col justify-between gap-4 bg-slate-50/50"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black shrink-0">
-                    <FolderOpen className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 truncate max-w-[140px]">
-                    /categorias/{cat.slug}
-                  </span>
-                </div>
-                <h3 className="font-black text-slate-900 text-sm">{cat.name}</h3>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                  {cat.description || 'Sem descrição cadastrada.'}
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
-                <Link
-                  href={`/categorias/${cat.slug}`}
-                  target="_blank"
-                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+        {categories.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-xs">
+            Nenhuma categoria carregada. Adicione uma no formulário acima.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categories.map((cat) => {
+              const articleCount = cat._count?.articles ?? 0;
+              return (
+                <div
+                  key={cat.id}
+                  className="p-5 rounded-2xl border border-slate-200 hover:border-blue-400 transition flex flex-col justify-between gap-4 bg-slate-50/50"
                 >
-                  <span>Abrir</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black shrink-0">
+                        <FolderOpen className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 truncate max-w-[140px]">
+                        /categorias/{cat.slug}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-black text-slate-900 text-sm">{cat.name}</h3>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 shrink-0 flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        {articleCount}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                      {cat.description || 'Sem descrição cadastrada.'}
+                    </p>
+                  </div>
 
-                <div className="flex items-center space-x-1">
-                  <button
-                    type="button"
-                    onClick={() => handleStartEdit(cat)}
-                    className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-600 hover:text-blue-700 transition"
-                    title="Editar categoria"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(cat)}
-                    disabled={deletingId === cat.id}
-                    className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
-                    title="Excluir categoria"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                    <Link
+                      href={`/categorias/${cat.slug}`}
+                      target="_blank"
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <span>Abrir</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+
+                    <div className="flex items-center space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEdit(cat)}
+                        className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-600 hover:text-blue-700 transition cursor-pointer"
+                        title="Editar categoria"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cat)}
+                        disabled={deletingId === cat.id}
+                        className={`p-1.5 rounded-lg transition cursor-pointer ${
+                          articleCount > 0
+                            ? 'text-slate-300 hover:text-slate-400 cursor-not-allowed'
+                            : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
+                        }`}
+                        title={
+                          articleCount > 0
+                            ? `Não é possível excluir: existem ${articleCount} material(is) vinculado(s)`
+                            : 'Excluir categoria'
+                        }
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

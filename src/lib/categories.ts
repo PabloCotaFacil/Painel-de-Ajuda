@@ -52,6 +52,11 @@ export async function getOrSeedCategories() {
           notIn: REMOVED_CATEGORY_SLUGS,
         },
       },
+      include: {
+        _count: {
+          select: { articles: true },
+        },
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -70,30 +75,13 @@ export async function getOrSeedCategories() {
             notIn: REMOVED_CATEGORY_SLUGS,
           },
         },
+        include: {
+          _count: {
+            select: { articles: true },
+          },
+        },
         orderBy: { name: 'asc' },
       });
-    } else {
-      const oldTreinamento = categories.find(
-        (c) => c.slug === 'treinamentos' && c.name !== 'Treinamentos e Videoaulas'
-      );
-      if (oldTreinamento) {
-        await prisma.category.update({
-          where: { slug: 'treinamentos' },
-          data: {
-            name: 'Treinamentos e Videoaulas',
-            description: 'Vídeos de treinamento, videoaulas, tutoriais e esteiras operacionais.',
-            icon: 'video',
-          },
-        });
-        categories = await prisma.category.findMany({
-          where: {
-            slug: {
-              notIn: REMOVED_CATEGORY_SLUGS,
-            },
-          },
-          orderBy: { name: 'asc' },
-        });
-      }
     }
 
     setCached(CATEGORIES_CACHE_KEY, categories);
@@ -106,6 +94,7 @@ export async function getOrSeedCategories() {
       slug: c.slug,
       description: c.description,
       icon: c.icon,
+      _count: { articles: 0 },
     }));
   }
 }

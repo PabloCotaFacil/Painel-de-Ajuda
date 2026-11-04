@@ -4,8 +4,12 @@ import { getOrSeedCategories } from '@/lib/categories';
 import { checkIsAdmin } from '@/lib/auth';
 import { invalidateCache } from '@/lib/cache';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
+    invalidateCache('categories');
     const categories = await getOrSeedCategories();
     return NextResponse.json(categories);
   } catch (error) {
@@ -23,7 +27,7 @@ export async function POST(request: Request) {
 
     const { name, slug, description, icon } = await request.json();
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Nome da categoria é obrigatório' }, { status: 400 });
     }
 
@@ -35,6 +39,18 @@ export async function POST(request: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
+    // Verifica se já existe categoria com esse slug
+    const existing = await prisma.category.findUnique({
+      where: { slug: finalSlug },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `Já existe uma categoria cadastrada com o slug "${finalSlug}". Escolha outro nome ou slug.` },
+        { status: 400 }
+      );
+    }
+
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
@@ -42,9 +58,15 @@ export async function POST(request: Request) {
         description: description ? description.trim() : null,
         icon: icon || 'folder',
       },
+      include: {
+        _count: {
+          select: { articles: true },
+        },
+      },
     });
 
     invalidateCache('categories');
+    invalidateCache('articles');
 
     return NextResponse.json(category, { status: 201 });
   } catch (error: any) {

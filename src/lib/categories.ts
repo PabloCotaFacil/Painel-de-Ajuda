@@ -37,15 +37,6 @@ export async function getOrSeedCategories() {
   }
 
   try {
-    if (!isSchemaVerified()) {
-      markSchemaVerified();
-      try {
-        await (prisma as any).$executeRawUnsafe(`
-          ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-        `);
-      } catch (_) {}
-    }
-
     let categories = await prisma.category.findMany({
       where: {
         slug: {

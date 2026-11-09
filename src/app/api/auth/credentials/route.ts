@@ -7,7 +7,7 @@ export const revalidate = 0;
 export async function GET() {
   const isAdmin = await checkIsAdmin();
   if (!isAdmin) {
-    return NextResponse.json({ isAdmin: false, error: 'Não autorizado' }, { status: 401 });
+    return NextResponse.json({ isAdmin: false });
   }
 
   const username = await getAdminUsername();

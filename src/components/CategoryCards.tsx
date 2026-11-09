@@ -7,6 +7,7 @@ import { Layers, Home, Video, FolderOpen } from 'lucide-react';
 interface CategoryCardsProps {
   activeSlug?: string;
   floating?: boolean;
+  initialCategories?: DynamicCategory[];
 }
 
 interface DynamicCategory {
@@ -17,19 +18,25 @@ interface DynamicCategory {
   icon?: string | null;
 }
 
-export default function CategoryCards({ activeSlug, floating = false }: CategoryCardsProps) {
-  const [dbCategories, setDbCategories] = useState<DynamicCategory[]>([]);
+export default function CategoryCards({
+  activeSlug,
+  floating = false,
+  initialCategories = [],
+}: CategoryCardsProps) {
+  const [dbCategories, setDbCategories] = useState<DynamicCategory[]>(initialCategories);
 
   useEffect(() => {
-    fetch('/api/categories')
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setDbCategories(data);
-        }
-      })
-      .catch(console.error);
-  }, []);
+    if (initialCategories.length === 0) {
+      fetch('/api/categories')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setDbCategories(data);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [initialCategories]);
 
   const allCard = {
     name: 'TODAS AS CATEGORIAS',
@@ -76,7 +83,7 @@ export default function CategoryCards({ activeSlug, floating = false }: Category
         {cards.map((cat) => {
           const Icon = cat.icon;
           const isSelected = activeSlug === cat.slug || (!activeSlug && cat.slug === 'all');
-          const targetUrl = cat.slug === 'all' ? '/' : `/categorias/${cat.slug}`;
+          const targetUrl = `/categorias/${cat.slug}`;
 
           return (
             <Link

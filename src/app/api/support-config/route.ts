@@ -17,11 +17,18 @@ export async function GET() {
       prisma.systemConfig.findUnique({ where: { key: 'support_helpdesk_url' } }),
     ]);
 
-    return NextResponse.json({
-      whatsappNumber: numConfig?.value || DEFAULT_WHATSAPP,
-      defaultMessage: msgConfig?.value || DEFAULT_MESSAGE,
-      helpDeskUrl: urlConfig?.value || '',
-    });
+    return NextResponse.json(
+      {
+        whatsappNumber: numConfig?.value || DEFAULT_WHATSAPP,
+        defaultMessage: msgConfig?.value || DEFAULT_MESSAGE,
+        helpDeskUrl: urlConfig?.value || '',
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
+        },
+      }
+    );
   } catch (error) {
     console.error('Erro ao buscar configuração de suporte:', error);
     return NextResponse.json({

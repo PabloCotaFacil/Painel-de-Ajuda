@@ -18,13 +18,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios (Título, Resumo e Categoria)' }, { status: 400 });
     }
 
-    // Garante coluna videoType no banco
-    try {
-      await (prisma as any).$executeRawUnsafe(`
-        ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-      `);
-    } catch (_) {}
-
     const cleanVideoUrl = videoUrl ? videoUrl.trim() : null;
     // Se o usuário selecionou explicitamente 'reel' ou 'training', respeita 100% a escolha
     const finalVideoType = cleanVideoUrl

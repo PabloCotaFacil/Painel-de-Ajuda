@@ -9,9 +9,12 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    invalidateCache('categories');
     const categories = await getOrSeedCategories();
-    return NextResponse.json(categories);
+    return NextResponse.json(categories, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error) {
     console.error('Erro ao listar categorias:', error);
     return NextResponse.json({ error: 'Erro ao buscar categorias' }, { status: 500 });

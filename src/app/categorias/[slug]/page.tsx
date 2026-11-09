@@ -17,65 +17,8 @@ import {
   FileText,
 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-const REMOVED_CATEGORY_SLUGS: string[] = [];
-
-let isVideoTypeMigrated = false;
-
-async function ensureVideoTypeMigration() {
-  if (isVideoTypeMigrated) return;
-  try {
-    await (prisma as any).$executeRawUnsafe(`
-      ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-    `);
-  } catch (_) {}
-
-  try {
-    await (prisma as any).$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "SystemConfig" (
-        "key" TEXT PRIMARY KEY,
-        "value" TEXT NOT NULL
-      );
-    `);
-
-    const configKey = 'migrated_16_9_videos_v2';
-    const existingFlag = await prisma.systemConfig.findUnique({
-      where: { key: configKey },
-    });
-
-    if (!existingFlag) {
-      await (prisma as any).$executeRawUnsafe(`
-        UPDATE "Article"
-        SET "videoType" = 'training'
-        WHERE "videoUrl" IS NOT NULL
-          AND "videoUrl" NOT ILIKE '%/shorts/%';
-      `);
-
-      await prisma.systemConfig.upsert({
-        where: { key: configKey },
-        update: { value: 'true' },
-        create: { key: configKey, value: 'true' },
-      });
-
-      invalidateCache('articles');
-    }
-
-    isVideoTypeMigrated = true;
-  } catch (err) {
-    try {
-      await (prisma as any).$executeRawUnsafe(`
-        UPDATE "Article"
-        SET "videoType" = 'training'
-        WHERE "videoUrl" IS NOT NULL
-          AND "videoUrl" NOT ILIKE '%/shorts/%'
-          AND ("videoType" IS NULL OR "videoType" = '');
-      `);
-    } catch (_) {}
-    console.warn('Aviso ao verificar migração de videoType:', err);
-  }
-}
+// ISR com revalidação inteligente a cada 60s para respostas ultrarrápidas do Edge CDN
+export const revalidate = 60;
 
 export default async function CategoryPage({
   params,
@@ -84,8 +27,6 @@ export default async function CategoryPage({
   params: { slug: string };
   searchParams?: { subcat?: string };
 }) {
-  await ensureVideoTypeMigration();
-
   const isTreinamentos = params.slug === 'treinamentos';
   const [categories, allArticles, shortReels] = await Promise.all([
     getOrSeedCategories(),

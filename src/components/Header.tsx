@@ -377,7 +377,7 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
           {navCategories.map((c) => (
             <Link
               key={c.id}
-              href={/categorias/}
+              href={`/categorias/${c.slug}`}
               className="hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0"
             >
               <span>{c.name}</span>

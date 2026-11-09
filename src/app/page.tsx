@@ -24,15 +24,18 @@ export default async function HomePage({
   const query = searchParams.q || '';
 
   // Executa todas as leituras em paralelo usando cache em memória
-  const [, heroBanner, allArticles] = await Promise.all([
+  const [categories, heroBanner, allArticles] = await Promise.all([
     getOrSeedCategories(),
     getFastHeroBanner(),
     getFastArticlesList(),
   ]);
 
-  const articles = query.trim()
+  const rawArticles = query.trim()
     ? smartSearchArticles(allArticles, query)
     : allArticles.slice(0, 16);
+
+  // Otimização: remove o corpo pesado 'content' antes de enviar para os cards no navegador
+  const articles = rawArticles.map(({ content, ...rest }: any) => rest);
 
   return (
     <div className="space-y-8">
@@ -118,7 +121,7 @@ export default async function HomePage({
       <SearchResultsAnchor query={query} />
 
       {/* CARDS DE CATEGORIAS FLUTUANTES (DINÂMICOS DO BANCO) */}
-      <CategoryCards floating={true} />
+      <CategoryCards floating={true} initialCategories={categories} />
 
       {/* SEÇÃO "ÚLTIMAS ATUALIZAÇÕES" / RESULTADOS DA PESQUISA */}
       <section id="materiais-section" className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 card-shadow space-y-6 scroll-mt-28 transition-colors">

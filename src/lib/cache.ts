@@ -69,7 +69,7 @@ const REMOVED_CATEGORY_SLUGS = ['credito-pj', 'credito-agro'];
  * e mantém em cache em memória para resposta instantânea (< 2ms).
  */
 export async function getFastArticlesList() {
-  const cached = getCached<any[]>('articles:fast-list', 60000);
+  const cached = getCached<any[]>('articles:fast-list', 120000);
   if (cached) return cached;
 
   const articles = await prisma.article.findMany({
@@ -84,7 +84,6 @@ export async function getFastArticlesList() {
       id: true,
       title: true,
       summary: true,
-      content: true,
       videoUrl: true,
       videoType: true,
       categoryId: true,

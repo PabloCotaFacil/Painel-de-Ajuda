@@ -17,12 +17,6 @@ export async function PUT(
     const body = await request.json();
     const { title, summary, content, categoryId, attachments, videoUrl, videoType } = body;
 
-    try {
-      await (prisma as any).$executeRawUnsafe(`
-        ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-      `);
-    } catch (_) {}
-
     // Remove old attachments
     await prisma.attachment.deleteMany({ where: { articleId: params.id } });
 
@@ -90,12 +84,6 @@ export async function PATCH(
   try {
     const body = await request.json();
     const { videoType } = body;
-
-    try {
-      await (prisma as any).$executeRawUnsafe(`
-        ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-      `);
-    } catch (_) {}
 
     const targetType = videoType === 'reel' ? 'reel' : 'training';
 

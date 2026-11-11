@@ -48,7 +48,9 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setNavCategories(data.filter((c: any) => c.slug !== 'treinamentos'));
+          setNavCategories(
+            data.filter((c: any) => c.slug !== 'treinamentos' && c.icon !== 'bank-pdf')
+          );
         }
       })
       .catch(console.error);

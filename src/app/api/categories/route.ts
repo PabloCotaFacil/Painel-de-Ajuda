@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
 import { checkIsAdmin } from '@/lib/auth';
@@ -70,6 +71,9 @@ export async function POST(request: Request) {
 
     invalidateCache('categories');
     invalidateCache('articles');
+    revalidatePath('/');
+    revalidatePath('/categorias/materiais-pdf');
+    revalidatePath('/categorias/[slug]', 'page');
 
     return NextResponse.json(category, { status: 201 });
   } catch (error: any) {

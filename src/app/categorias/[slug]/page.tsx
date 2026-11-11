@@ -16,6 +16,7 @@ import {
   Home,
   FileText,
   ChevronRight,
+  Landmark,
 } from 'lucide-react';
 
 // ISR com revalidação a cada 60s
@@ -35,12 +36,17 @@ export default async function CategoryPage({
     isTreinamentos ? getActiveShortReels() : Promise.resolve([]),
   ]);
 
-  const pdfCategories = categories.filter(
+  const bankPdfCategories = categories.filter((c: any) => c.icon === 'bank-pdf');
+  const mainPdfCategories = categories.filter(
     (c: any) =>
       c.slug !== 'treinamentos' &&
       c.slug !== 'imobiliario' &&
+      c.icon !== 'bank-pdf' &&
       (c.slug.includes('pdf') || c.icon === 'file')
   );
+  const mainPdfHub =
+    mainPdfCategories[0] || categories.find((c: any) => c.slug === 'materiais-pdf');
+  const pdfCategories = mainPdfCategories.length > 0 ? mainPdfCategories : bankPdfCategories;
 
   // Tratamento para "TODAS AS CATEGORIAS" (slug === 'all')
   if (params.slug === 'all') {
@@ -152,11 +158,16 @@ export default async function CategoryPage({
     );
 
   const manualArticles = sourceArticles.filter((art) => !art.videoUrl);
-  const otherCategories = categories.filter((c: any) => c.slug !== 'treinamentos');
+  const otherCategories = categories.filter(
+    (c: any) => c.slug !== 'treinamentos' && c.icon !== 'bank-pdf'
+  );
+  const isPdfHub =
+    category.slug === 'materiais-pdf' || category.icon === 'file';
+  const isBankPdfPage = category.icon === 'bank-pdf';
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="flex flex-wrap items-center gap-2.5">
         <Link
           href="/"
           className="inline-flex items-center space-x-2 text-xs font-black text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-900 hover:bg-blue-50 dark:hover:bg-slate-800 px-4 py-2.5 rounded-xl border border-blue-200 dark:border-slate-800 shadow-sm transition group"
@@ -164,6 +175,16 @@ export default async function CategoryPage({
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span>← Voltar para a Página Inicial</span>
         </Link>
+
+        {isBankPdfPage && mainPdfHub && (
+          <Link
+            href={`/categorias/${mainPdfHub.slug}`}
+            className="inline-flex items-center space-x-2 text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 shadow-sm transition"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Lista de Bancos ({mainPdfHub.name})</span>
+          </Link>
+        )}
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 card-shadow transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -173,12 +194,20 @@ export default async function CategoryPage({
               <Video className="w-4 h-4 text-rose-500" />
             ) : category.slug === 'imobiliario' || category.icon === 'home' ? (
               <Home className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+            ) : isBankPdfPage ? (
+              <Landmark className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             ) : category.slug.includes('pdf') || category.icon === 'file' ? (
               <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             ) : (
               <FolderOpen className="w-4 h-4 text-cyan-500" />
             )}
-            <span>{isTreinamentos ? 'Central de Capacitação CotaFácil' : 'Categoria'}</span>
+            <span>
+              {isTreinamentos
+                ? 'Central de Capacitação CotaFácil'
+                : isBankPdfPage
+                ? 'Materiais em PDF • Banco Parceiro'
+                : 'Categoria'}
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
             {category.name}
@@ -304,12 +333,111 @@ export default async function CategoryPage({
         </section>
       )}
 
-      <CategoryMaterialsTabs
-        articles={manualArticles}
-        categoryName={category.name}
-        isTreinamentos={isTreinamentos}
-        hasVideosAbove={training16x9Articles.length > 0 || reels.length > 0}
-      />
+      {isBankPdfPage && bankPdfCategories.length > 1 && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center gap-2">
+          <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mr-2">
+            Bancos Parceiros:
+          </span>
+          {bankPdfCategories.map((bankCat: any) => (
+            <Link
+              key={bankCat.id}
+              href={`/categorias/${bankCat.slug}`}
+              className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 ${
+                bankCat.slug === category.slug
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Landmark className="w-3.5 h-3.5" />
+              <span>{bankCat.name}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  bankCat.slug === category.slug
+                    ? 'bg-white/20 text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                {bankCat._count?.articles ?? 0}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {isPdfHub && (
+        <section className="space-y-4">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center space-x-2.5">
+              <Landmark className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                  Bancos Parceiros ({bankPdfCategories.length})
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Selecione um banco para acessar os PDFs publicados.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {bankPdfCategories.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800">
+              <Landmark className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+              <p className="text-slate-600 dark:text-slate-300 text-sm font-bold">
+                Nenhum banco cadastrado ainda.
+              </p>
+              <p className="text-slate-400 text-xs mt-1">
+                Cadastre os bancos parceiros no Painel Admin em &quot;Categorias &amp; Esteiras&quot;.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {bankPdfCategories.map((bankCat: any) => {
+                const count = bankCat._count?.articles ?? 0;
+                return (
+                  <Link
+                    key={bankCat.id}
+                    href={`/categorias/${bankCat.slug}`}
+                    className="group bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 card-shadow transition flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-start gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/70 dark:border-emerald-900/50">
+                        <Landmark className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition truncate">
+                          {bankCat.name}
+                        </h3>
+                        {bankCat.description && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                            {bankCat.description}
+                          </p>
+                        )}
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300 mt-1.5">
+                          <FileText className="w-3 h-3" />
+                          <span>
+                            {count === 1 ? '1 PDF publicado' : `${count} PDFs publicados`}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition shrink-0" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {(!isPdfHub || manualArticles.length > 0) && (
+        <CategoryMaterialsTabs
+          articles={manualArticles}
+          categoryName={category.name}
+          isTreinamentos={isTreinamentos}
+          hasVideosAbove={training16x9Articles.length > 0 || reels.length > 0}
+        />
+      )}
     </div>
   );
 }

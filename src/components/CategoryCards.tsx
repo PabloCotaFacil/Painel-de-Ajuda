@@ -46,14 +46,22 @@ export default function CategoryCards({
     isDark: true,
   };
 
-  const dynamicCards = (dbCategories.length > 0
-    ? dbCategories
+  const visibleDbCategories = dbCategories.filter((c) => c.icon !== 'bank-pdf');
+
+  const dynamicCards = (visibleDbCategories.length > 0
+    ? visibleDbCategories
     : [
         {
           name: 'CRÉDITO IMOBILIÁRIO',
           slug: 'imobiliario',
-          description: 'Financiamento habitacional, Home Equity e repasse Caixa/Itaú/BB.',
+          description: 'Financiamento habitacional, Home Equity e repasse bancário.',
           icon: 'home',
+        },
+        {
+          name: 'MATERIAIS EM PDF',
+          slug: 'materiais-pdf',
+          description: 'Manuais completos e documentos em PDF por banco.',
+          icon: 'file',
         },
         {
           name: 'TREINAMENTOS E VIDEOAULAS',

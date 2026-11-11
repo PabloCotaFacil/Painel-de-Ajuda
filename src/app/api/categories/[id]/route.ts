@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { checkIsAdmin } from '@/lib/auth';
 import { invalidateCache } from '@/lib/cache';
@@ -62,6 +63,9 @@ export async function PUT(
 
     invalidateCache('categories');
     invalidateCache('articles');
+    revalidatePath('/');
+    revalidatePath('/categorias/materiais-pdf');
+    revalidatePath('/categorias/[slug]', 'page');
 
     return NextResponse.json(updated);
   } catch (error: any) {
@@ -103,6 +107,9 @@ export async function DELETE(
 
     invalidateCache('categories');
     invalidateCache('articles');
+    revalidatePath('/');
+    revalidatePath('/categorias/materiais-pdf');
+    revalidatePath('/categorias/[slug]', 'page');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

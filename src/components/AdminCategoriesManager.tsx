@@ -13,6 +13,7 @@ import {
   ArrowRight,
   FolderOpen,
   FileText,
+  Landmark,
 } from 'lucide-react';
 
 export interface CategoryItem {
@@ -187,15 +188,30 @@ export default function AdminCategoriesManager({
               Adicione esteiras bancárias ou produtos para organizar manuais, regras e treinamentos.
             </p>
           </div>
-          {editingCatId && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition self-start sm:self-auto cursor-pointer"
-            >
-              Cancelar Edição
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            {!editingCatId && (
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setIcon('bank-pdf');
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-2 rounded-xl transition cursor-pointer"
+              >
+                <Landmark className="w-3.5 h-3.5 text-emerald-600" />
+                <span>+ Novo Banco (Materiais em PDF)</span>
+              </button>
+            )}
+            {editingCatId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
+              >
+                Cancelar Edição
+              </button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -266,8 +282,9 @@ export default function AdminCategoriesManager({
                 onChange={(e) => setIcon(e.target.value)}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
+                <option value="bank-pdf">Banco (dentro de Materiais em PDF)</option>
                 <option value="folder">Pasta Padrão</option>
-                <option value="file">Pasta de Materiais em PDF</option>
+                <option value="file">Pasta Principal (Materiais em PDF)</option>
                 <option value="home">Casa (Crédito Imobiliário)</option>
                 <option value="video">Câmera (Treinamentos)</option>
               </select>
@@ -314,12 +331,31 @@ export default function AdminCategoriesManager({
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black shrink-0">
-                        <FolderOpen className="w-4 h-4" />
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center font-black shrink-0 ${
+                          cat.icon === 'bank-pdf'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}
+                      >
+                        {cat.icon === 'bank-pdf' ? (
+                          <Landmark className="w-4 h-4" />
+                        ) : cat.icon === 'file' ? (
+                          <FileText className="w-4 h-4" />
+                        ) : (
+                          <FolderOpen className="w-4 h-4" />
+                        )}
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 truncate max-w-[140px]">
-                        /categorias/{cat.slug}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {cat.icon === 'bank-pdf' && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Banco • PDF
+                          </span>
+                        )}
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 truncate max-w-[140px]">
+                          /categorias/{cat.slug}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-black text-slate-900 text-sm">{cat.name}</h3>

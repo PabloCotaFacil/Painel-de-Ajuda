@@ -155,7 +155,9 @@ export default function AdminMateriaisClient({
       }
     } else if (kind === 'pdf_doc') {
       setVideoType('training');
-      const pdfCat = categories.find((c) => c.slug.includes('pdf') || c.icon === 'file');
+      const bankPdfCat = categories.find((c) => c.icon === 'bank-pdf');
+      const pdfCat =
+        bankPdfCat || categories.find((c) => c.slug.includes('pdf') || c.icon === 'file');
       if (pdfCat) {
         setCategoryId(pdfCat.id);
       }
@@ -1004,11 +1006,26 @@ export default function AdminMateriaisClient({
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 <option value="all">Todas as Categorias</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                <optgroup label="Categorias Principais">
+                  {categories
+                    .filter((c) => c.icon !== 'bank-pdf')
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </optgroup>
+                {categories.some((c) => c.icon === 'bank-pdf') && (
+                  <optgroup label="Bancos (Materiais em PDF)">
+                    {categories
+                      .filter((c) => c.icon === 'bank-pdf')
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
               </select>
             </div>
           </div>
@@ -1381,7 +1398,7 @@ export default function AdminMateriaisClient({
 
               <div>
                 <label className="text-xs font-extrabold text-slate-700 block mb-1">
-                  CATEGORIA DO SISTEMA *
+                  CATEGORIA / BANCO *
                 </label>
                 <select
                   value={categoryId}
@@ -1392,13 +1409,40 @@ export default function AdminMateriaisClient({
                   {categories.length === 0 ? (
                     <option value="">Carregando categorias...</option>
                   ) : (
-                    categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))
+                    <>
+                      <optgroup label="Categorias Principais">
+                        {categories
+                          .filter((c) => c.icon !== 'bank-pdf')
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                      </optgroup>
+                      {categories.some((c) => c.icon === 'bank-pdf') && (
+                        <optgroup label="Bancos (Materiais em PDF)">
+                          {categories
+                            .filter((c) => c.icon === 'bank-pdf')
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
+                    </>
                   )}
                 </select>
+                {materialKind === 'pdf_doc' &&
+                  !categories.some((c) => c.icon === 'bank-pdf') && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('categories')}
+                      className="text-[11px] font-bold text-emerald-700 hover:underline mt-1 block text-left"
+                    >
+                      + Criar categorias por banco em &quot;Categorias &amp; Esteiras&quot;
+                    </button>
+                  )}
               </div>
             </div>
 

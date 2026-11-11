@@ -68,21 +68,23 @@ export default function CategoryMaterialsTabs({
     <section className="space-y-4">
       <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2.5">
-          <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+          {showSeparationTabs && filter === 'pdfs' ? (
+            <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          ) : (
+            <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+          )}
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
               {isTreinamentos
-                ? `Apostilas, Manuais & Roteiros de Treinamento (${articles.length})`
+                ? `Apostilas, Manuais & Roteiros (${articles.length})`
                 : showSeparationTabs && filter === 'summaries'
-                ? `Resumos Gerais & Regras — ${categoryName} (${summaries.length})`
+                ? `Resumos & Regras — ${categoryName} (${summaries.length})`
                 : showSeparationTabs && filter === 'pdfs'
-                ? `Materiais & Documentos com PDF — ${categoryName} (${withPdfs.length})`
-                : `Manuais & Resumos Gerais — ${categoryName} (${articles.length})`}
+                ? `Materiais em PDF — ${categoryName} (${withPdfs.length})`
+                : `${categoryName} (${articles.length})`}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {showSeparationTabs
-                ? 'Resumos gerais de regras separados dos materiais que possuem PDFs em anexo.'
-                : 'Documentos oficiais, esteiras operacionais e resumos de consulta rápida.'}
+              Manuais operacionais, regras de atendimento e materiais de apoio.
             </p>
           </div>
         </div>
@@ -99,7 +101,7 @@ export default function CategoryMaterialsTabs({
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Resumos Gerais ({summaries.length})</span>
+              <span>Resumos & Regras ({summaries.length})</span>
             </button>
 
             <button
@@ -112,7 +114,7 @@ export default function CategoryMaterialsTabs({
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Com PDFs Anexos ({withPdfs.length})</span>
+              <span>Materiais em PDF ({withPdfs.length})</span>
             </button>
 
             <button
@@ -135,8 +137,8 @@ export default function CategoryMaterialsTabs({
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800">
           <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">
             {hasVideosAbove
-              ? 'Todos os materiais cadastrados para esta categoria estão disponíveis em formato de vídeo acima.'
-              : 'Nenhum resumo ou material cadastrado nesta seção ainda.'}
+              ? 'Os conteúdos desta categoria estão disponíveis nos vídeos acima.'
+              : 'Nenhum material cadastrado nesta categoria ainda.'}
           </p>
         </div>
       ) : (

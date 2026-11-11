@@ -28,13 +28,11 @@ import {
   MonitorPlay,
   Smartphone,
   MessageCircle,
-  Landmark,
 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import RichTextEditor from '@/components/RichTextEditor';
 import AdminReelsManager from '@/components/AdminReelsManager';
 import AdminCategoriesManager from '@/components/AdminCategoriesManager';
-import AdminBankFoldersManager from '@/components/AdminBankFoldersManager';
 import { smartSearchArticles } from '@/lib/search';
 
 interface Attachment {
@@ -66,7 +64,7 @@ interface Article {
   attachments: Attachment[];
 }
 
-type MaterialKind = 'training_16_9' | 'reel_9_16' | 'manual_pdf';
+type MaterialKind = 'training_16_9' | 'reel_9_16' | 'manual_pdf' | 'pdf_doc';
 
 export default function AdminMateriaisClient({
   initialCategories,
@@ -78,7 +76,7 @@ export default function AdminMateriaisClient({
   const router = useRouter();
 
   // Navigation tab state
-  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banks' | 'banner' | 'reels' | 'support' | 'password'>(
+  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banner' | 'reels' | 'support' | 'password'>(
     initialArticles.length > 0 ? 'list' : 'editor'
   );
 
@@ -141,16 +139,32 @@ export default function AdminMateriaisClient({
     setMaterialKind(kind);
     if (kind === 'training_16_9') {
       setVideoType('training');
-      if (!categoryId && categories[0]?.id) {
+      const treinamentosCat = categories.find((c) => c.slug === 'treinamentos');
+      if (treinamentosCat) {
+        setCategoryId(treinamentosCat.id);
+      } else if (!categoryId && categories[0]?.id) {
         setCategoryId(categories[0].id);
       }
     } else if (kind === 'reel_9_16') {
       setVideoType('reel');
-      if (!categoryId && categories[0]?.id) {
+      const treinamentosCat = categories.find((c) => c.slug === 'treinamentos');
+      if (treinamentosCat) {
+        setCategoryId(treinamentosCat.id);
+      } else if (!categoryId && categories[0]?.id) {
         setCategoryId(categories[0].id);
+      }
+    } else if (kind === 'pdf_doc') {
+      setVideoType('training');
+      const pdfCat = categories.find((c) => c.slug.includes('pdf') || c.icon === 'file');
+      if (pdfCat) {
+        setCategoryId(pdfCat.id);
       }
     } else {
       setVideoType('training');
+      const imobCat = categories.find((c) => c.slug === 'imobiliario');
+      if (imobCat) {
+        setCategoryId(imobCat.id);
+      }
     }
   };
 
@@ -478,8 +492,9 @@ export default function AdminMateriaisClient({
       (art.videoUrl?.includes('/shorts/') && art.videoType !== 'training');
 
     setVideoType(isReelVideo ? 'reel' : 'training');
+    const isPdfCategory = art.category?.slug?.includes('pdf') || art.category?.icon === 'file';
     if (!art.videoUrl) {
-      setMaterialKind('manual_pdf');
+      setMaterialKind(isPdfCategory || art.attachments?.length > 0 ? 'pdf_doc' : 'manual_pdf');
     } else if (isReelVideo) {
       setMaterialKind('reel_9_16');
     } else {
@@ -517,8 +532,8 @@ export default function AdminMateriaisClient({
           type: 'success',
           text:
             nextType === 'training'
-              ? `"${art.title}" agora está configurado como Treinamento Completo (16:9) e aparece logo abaixo dos Reels!`
-              : `"${art.title}" agora está configurado como Pílula Rápida / Reel (9:16) no topo de Treinamentos!`,
+              ? `"${art.title}" movido para Treinamentos (16:9).`
+              : `"${art.title}" movido para Reels (9:16).`,
         });
         router.refresh();
       } else {
@@ -715,9 +730,9 @@ export default function AdminMateriaisClient({
       if (res.ok && data) {
         const destinationLabel =
           finalVideoType === 'reel'
-            ? 'no Feed de Reels (9:16) no topo de Treinamentos'
+            ? 'em Reels (9:16)'
             : finalVideoType === 'training'
-            ? 'na seção de Treinamentos Completos (16:9) logo abaixo dos Reels'
+            ? 'em Treinamentos (16:9)'
             : 'no portal';
 
         // Update local articles state
@@ -874,18 +889,6 @@ export default function AdminMateriaisClient({
         >
           <FolderOpen className="w-4 h-4 text-blue-600" />
           <span>Categorias & Esteiras</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('banks')}
-          className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-2 transition ${
-            activeTab === 'banks'
-              ? 'bg-amber-500 text-slate-950 shadow-md'
-              : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <Landmark className="w-4 h-4 text-amber-600" />
-          <span>Pastas dos Bancos (Drive/PDFs)</span>
         </button>
 
         <button
@@ -1127,8 +1130,8 @@ export default function AdminMateriaisClient({
                           }`}
                           title={
                             isReel
-                              ? 'Mover este vídeo para a seção de Treinamentos Completos (16:9) abaixo dos Reels'
-                              : 'Mover este vídeo para o player vertical de Reels (9:16)'
+                              ? 'Converter para Treinamento (16:9)'
+                              : 'Converter para Reel (9:16)'
                           }
                         >
                           {isReel ? (
@@ -1230,21 +1233,18 @@ export default function AdminMateriaisClient({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* PASSO 1: ESCOLHA DO TIPO DE MATERIAL E ONDE ELE VAI APARECER */}
+            {/* PASSO 1: TIPO DE MATERIAL */}
             <div className="bg-slate-50 p-5 rounded-2xl border-2 border-blue-200 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <label className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center font-black">
                     1
                   </span>
-                  <span>Qual tipo de material você está subindo? (Define onde vai aparecer) *</span>
+                  <span>Tipo de Material *</span>
                 </label>
-                <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
-                  Diferenciação Automática
-                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
                 {/* Opção A: Treinamento Completo 16:9 */}
                 <button
                   type="button"
@@ -1259,17 +1259,17 @@ export default function AdminMateriaisClient({
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 text-xs font-black text-rose-700 bg-rose-100 px-2.5 py-1 rounded-lg">
                         <MonitorPlay className="w-4 h-4" />
-                        <span>Vídeo 16:9 (Horizontal)</span>
+                        <span>Vídeo 16:9</span>
                       </span>
                       {materialKind === 'training_16_9' && (
                         <CheckCircle className="w-4 h-4 text-rose-600 shrink-0" />
                       )}
                     </div>
                     <p className="text-sm font-black text-slate-900 pt-1">
-                      📺 Treinamento Padrão (16:9)
+                      Treinamento (16:9)
                     </p>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Videoaula completa em tela horizontal. Vai para a aba de Treinamentos <strong>logo abaixo do campo de Reels</strong>.
+                      Videoaula completa em tela horizontal.
                     </p>
                   </div>
                 </button>
@@ -1288,22 +1288,22 @@ export default function AdminMateriaisClient({
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 text-xs font-black text-cyan-800 bg-cyan-100 px-2.5 py-1 rounded-lg">
                         <Smartphone className="w-4 h-4" />
-                        <span>Vídeo 9:16 (Vertical)</span>
+                        <span>Vídeo 9:16</span>
                       </span>
                       {materialKind === 'reel_9_16' && (
                         <CheckCircle className="w-4 h-4 text-cyan-600 shrink-0" />
                       )}
                     </div>
                     <p className="text-sm font-black text-slate-900 pt-1">
-                      📱 Reel / Pílula Rápida (9:16)
+                      Reel / Pílula (9:16)
                     </p>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Vídeo curto em pé (YouTube Shorts). Vai para o <strong>Player de Reels no canto superior</strong> de Treinamentos.
+                      Vídeo curto vertical (YouTube Shorts).
                     </p>
                   </div>
                 </button>
 
-                {/* Opção C: Manual / Regra / PDF */}
+                {/* Opção C: Resumo / Regra */}
                 <button
                   type="button"
                   onClick={() => handleSelectMaterialKind('manual_pdf')}
@@ -1316,18 +1316,47 @@ export default function AdminMateriaisClient({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-1.5 text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-1 rounded-lg">
-                        <FileText className="w-4 h-4" />
-                        <span>Texto & PDF</span>
+                        <BookOpen className="w-4 h-4" />
+                        <span>Texto</span>
                       </span>
                       {materialKind === 'manual_pdf' && (
                         <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
                       )}
                     </div>
                     <p className="text-sm font-black text-slate-900 pt-1">
-                      📄 Manual / Regra / PDF
+                      Resumo / Regra
                     </p>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Comunicado, regra bancária, checklist ou apostila em PDF para leitura e download na categoria escolhida.
+                      Comunicado, regra bancária ou resumo operacional.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Opção D: Material em PDF */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectMaterialKind('pdf_doc')}
+                  className={`p-4 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
+                    materialKind === 'pdf_doc'
+                      ? 'border-emerald-600 bg-emerald-50/90 shadow-md ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
+                        <FileText className="w-4 h-4" />
+                        <span>Arquivo PDF</span>
+                      </span>
+                      {materialKind === 'pdf_doc' && (
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-sm font-black text-slate-900 pt-1">
+                      Material em PDF
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Manual completo em PDF para leitura e download por banco.
                     </p>
                   </div>
                 </button>
@@ -1388,6 +1417,9 @@ export default function AdminMateriaisClient({
             </div>
 
             {/* VIDEO TRAINING INPUT & LIVE INLINE PREVIEW */}
+            {(materialKind === 'training_16_9' ||
+              materialKind === 'reel_9_16' ||
+              videoUrl.trim().length > 0) && (
             <div
               className={`p-5 rounded-2xl border space-y-3 ${
                 materialKind === 'reel_9_16'
@@ -1400,8 +1432,8 @@ export default function AdminMateriaisClient({
                   <Video className="w-4 h-4 text-rose-600" />
                   <span>
                     {materialKind === 'reel_9_16'
-                      ? 'Link do Vídeo Vertical 9:16 (Vai para o Player de Reels no Topo)'
-                      : 'Link do Vídeo de Treinamento 16:9 (Vai para Treinamentos Completos abaixo dos Reels)'}
+                      ? 'Link do Vídeo Vertical (9:16)'
+                      : 'Link do Vídeo de Treinamento (16:9)'}
                   </span>
                 </label>
                 <span
@@ -1412,12 +1444,12 @@ export default function AdminMateriaisClient({
                   }`}
                 >
                   {materialKind === 'reel_9_16'
-                    ? '📱 Destino: Reels (9:16)'
-                    : '📺 Destino: Treinamento Completo (16:9)'}
+                    ? 'Reel (9:16)'
+                    : 'Treinamento (16:9)'}
                 </span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Cole o link do YouTube (inclusive Não Listado), Vimeo, Loom ou Google Drive. O vídeo toca direto no painel sem sair do sistema.
+                Cole o link do YouTube (inclusive Não Listado), Vimeo, Loom ou Google Drive.
               </p>
               <input
                 type="text"
@@ -1430,8 +1462,7 @@ export default function AdminMateriaisClient({
                 onChange={(e) => {
                   const val = e.target.value;
                   setVideoUrl(val);
-                  if (val.trim() && materialKind === 'manual_pdf') {
-                    // Se estava como manual e colou vídeo, define como 16:9 por padrão (ou 9:16 se for /shorts/)
+                  if (val.trim() && (materialKind === 'manual_pdf' || materialKind === 'pdf_doc')) {
                     if (val.includes('/shorts/')) {
                       setMaterialKind('reel_9_16');
                       setVideoType('reel');
@@ -1444,19 +1475,14 @@ export default function AdminMateriaisClient({
                 className="w-full px-4 py-2.5 bg-white border border-rose-300 rounded-xl font-medium text-slate-900 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
 
-              {/* CONFIRMAÇÃO RÁPIDA DE FORMATO QUANDO HÁ URL DE VÍDEO */}
               {videoUrl.trim() && (
                 <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="text-xs">
-                    <span className="font-black text-slate-900">Formato selecionado para este vídeo: </span>
+                    <span className="font-black text-slate-900">Formato: </span>
                     {videoType === 'reel' ? (
-                      <span className="font-bold text-cyan-700">
-                        📱 Reel Vertical (9:16) — Aparecerá no Player de Reels do topo
-                      </span>
+                      <span className="font-bold text-cyan-700">Reel Vertical (9:16)</span>
                     ) : (
-                      <span className="font-bold text-rose-700">
-                        📺 Treinamento Completo (16:9) — Aparecerá na grade abaixo dos Reels
-                      </span>
+                      <span className="font-bold text-rose-700">Treinamento (16:9)</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -1469,7 +1495,7 @@ export default function AdminMateriaisClient({
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      📺 Usar 16:9 (Abaixo dos Reels)
+                      Treinamento 16:9
                     </button>
                     <button
                       type="button"
@@ -1480,7 +1506,7 @@ export default function AdminMateriaisClient({
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      📱 Usar 9:16 (Reels)
+                      Reel 9:16
                     </button>
                   </div>
                 </div>
@@ -1490,7 +1516,7 @@ export default function AdminMateriaisClient({
               {videoUrl.trim() && (
                 <div className="pt-2">
                   <p className="text-[11px] font-extrabold text-slate-700 mb-1 flex items-center gap-1">
-                    <span>Pré-visualização do Reprodutor Integrado:</span>
+                    <span>Pré-visualização do Vídeo:</span>
                   </p>
                   <VideoPlayer
                     url={videoUrl}
@@ -1500,6 +1526,7 @@ export default function AdminMateriaisClient({
                 </div>
               )}
             </div>
+            )}
 
             {/* RICH TEXT EDITOR SECTION */}
             <div className="space-y-2">
@@ -1508,11 +1535,11 @@ export default function AdminMateriaisClient({
                   <FileText className="w-4 h-4 text-blue-700" />
                   <span>
                     CONTEÚDO DETALHADO & REGRAS{' '}
-                    {videoUrl.trim() ? '(Opcional para vídeos)' : '*'}
+                    {videoUrl.trim() || materialKind === 'pdf_doc' ? '(Opcional)' : '*'}
                   </span>
                 </label>
                 <span className="text-[11px] text-slate-500">
-                  Use os botões da barra para mudar a <strong className="text-rose-600">cor das letras para vermelho</strong>, adicionar títulos e caixas de alerta.
+                  Formatação de texto, destaques e caixas de alerta.
                 </span>
               </div>
 
@@ -1693,26 +1720,24 @@ export default function AdminMateriaisClient({
                   : editingArticleId
                   ? 'Salvar Alterações do Material'
                   : materialKind === 'training_16_9'
-                  ? 'Publicar Treinamento Completo (16:9)'
+                  ? 'Publicar Treinamento (16:9)'
                   : materialKind === 'reel_9_16'
-                  ? 'Publicar Pílula Rápida / Reel (9:16)'
-                  : 'Publicar Manual / Regra'}
+                  ? 'Publicar Reel (9:16)'
+                  : materialKind === 'pdf_doc'
+                  ? 'Publicar Material em PDF'
+                  : 'Publicar Resumo / Regra'}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* TAB 3: MOLDAR BANNER DA HOME */}
-            {activeTab === 'categories' && (
+      {/* TAB 3: CATEGORIAS */}
+      {activeTab === 'categories' && (
         <AdminCategoriesManager
           categories={categories}
           onCategoriesChanged={fetchFreshCategories}
         />
-      )}
-
-      {activeTab === 'banks' && (
-        <AdminBankFoldersManager onSaved={() => router.refresh()} />
       )}
 
       {activeTab === 'banner' && (

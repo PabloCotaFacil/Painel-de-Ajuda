@@ -39,6 +39,7 @@ export default function AdminCategoriesManager({
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
+  const [icon, setIcon] = useState('folder');
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -48,6 +49,7 @@ export default function AdminCategoriesManager({
     setName('');
     setSlug('');
     setDescription('');
+    setIcon('folder');
   };
 
   const handleStartEdit = (cat: CategoryItem) => {
@@ -55,6 +57,7 @@ export default function AdminCategoriesManager({
     setName(cat.name);
     setSlug(cat.slug);
     setDescription(cat.description || '');
+    setIcon(cat.icon || 'folder');
     setMessage(null);
     window.scrollTo({ top: 200, behavior: 'smooth' });
   };
@@ -80,6 +83,7 @@ export default function AdminCategoriesManager({
           name: name.trim(),
           slug: slug.trim() || undefined,
           description: description.trim() || undefined,
+          icon,
         }),
       });
 
@@ -239,17 +243,35 @@ export default function AdminCategoriesManager({
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-extrabold text-slate-700 block mb-1">
-              Descrição / Resumo Operacional
-            </label>
-            <input
-              type="text"
-              placeholder="Ex: Regras de LTV, documentação exigida, checklist e esteiras bancárias."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                Descrição
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Regras, checklists ou manuais em PDF."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                Tipo / Ícone da Categoria
+              </label>
+              <select
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="folder">Pasta Padrão</option>
+                <option value="file">Pasta de Materiais em PDF</option>
+                <option value="home">Casa (Crédito Imobiliário)</option>
+                <option value="video">Câmera (Treinamentos)</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex justify-end pt-2">
@@ -273,7 +295,7 @@ export default function AdminCategoriesManager({
             <span>Categorias Ativas ({categories.length})</span>
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Cada categoria possui sua página própria onde os franqueados acessam materiais, manuais e videoaulas específicos.
+            Categorias disponíveis no painel para organizar resumos, PDFs e treinamentos.
           </p>
         </div>
 

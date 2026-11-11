@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Layers, Home, Video, FolderOpen } from 'lucide-react';
+import { Layers, Home, Video, FolderOpen, FileText } from 'lucide-react';
 
 interface CategoryCardsProps {
   activeSlug?: string;
@@ -69,8 +69,10 @@ export default function CategoryCards({
     icon:
       cat.slug === 'treinamentos'
         ? Video
-        : cat.slug === 'imobiliario'
+        : cat.slug === 'imobiliario' || cat.icon === 'home'
         ? Home
+        : cat.slug.includes('pdf') || cat.icon === 'file'
+        ? FileText
         : FolderOpen,
     isDark: false,
   }));
@@ -79,7 +81,11 @@ export default function CategoryCards({
 
   return (
     <section className={floating ? '-mt-4 sm:-mt-6 relative z-20 mb-8' : 'py-4'}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        className={`grid grid-cols-1 sm:grid-cols-2 ${
+          cards.length >= 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+        } gap-4`}
+      >
         {cards.map((cat) => {
           const Icon = cat.icon;
           const isSelected = activeSlug === cat.slug || (!activeSlug && cat.slug === 'all');

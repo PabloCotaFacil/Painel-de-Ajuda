@@ -132,11 +132,7 @@ export default function AdminReelsManager({
   };
 
   const handleConvertReelToTraining = async (reel: ShortReelItem) => {
-    if (
-      !confirm(
-        `Deseja mover "${reel.title}" do player de Reels (9:16) para a seção de Treinamentos Completos (16:9) logo abaixo dos Reels?`
-      )
-    ) {
+    if (!confirm(`Mover "${reel.title}" para Treinamentos (16:9)?`)) {
       return;
     }
 
@@ -150,7 +146,7 @@ export default function AdminReelsManager({
       if (res.ok && data.article) {
         setFeedback({
           type: 'success',
-          message: `"${reel.title}" foi convertido para Treinamento Completo (16:9) e agora aparece abaixo dos Reels!`,
+          message: `"${reel.title}" movido para Treinamentos (16:9).`,
         });
         if (onConvertedToArticle) {
           onConvertedToArticle(data.article);
@@ -231,10 +227,10 @@ export default function AdminReelsManager({
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-900">
-                {editingReelId ? 'Editando Pílula Rápida (Reel 9:16)' : 'Cadastrar Nova Pílula Rápida (Reel 9:16)'}
+                {editingReelId ? 'Editar Pílula Rápida (Reel 9:16)' : 'Nova Pílula Rápida (Reel 9:16)'}
               </h3>
               <p className="text-xs text-slate-500">
-                Exclusivo para vídeos verticais curtos (YouTube Shorts 9:16). Para vídeos em <strong>16:9 (Treinamento Padrão)</strong>, utilize a aba <strong>&quot;Subir Novo Material / Vídeo&quot;</strong>.
+                Vídeos curtos verticais (YouTube Shorts 9:16).
               </p>
             </div>
           </div>
@@ -288,7 +284,7 @@ export default function AdminReelsManager({
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-start gap-2 mt-1.5">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Atenção:</strong> Este link parece ser um vídeo horizontal padrão (16:9) e não um Shorts (`/shorts/`). Se for um treinamento completo em 16:9, cadastre-o na aba <strong>&quot;Publicar Novo Material&quot;</strong> marcando <strong>&quot;Treinamento Completo (16:9)&quot;</strong> para que ele apareça abaixo dos Reels!
+                    Link em formato horizontal (16:9). Para aulas em 16:9, utilize a opção &quot;Treinamento (16:9)&quot;.
                   </span>
                 </div>
               )}
@@ -405,7 +401,7 @@ export default function AdminReelsManager({
               </span>
             </h4>
             <p className="text-xs text-slate-500 mt-0.5">
-              Subiu um vídeo 16:9 aqui por engano? Clique em <strong>&quot;Mover p/ Treinamento 16:9&quot;</strong> para transferi-lo para a grade abaixo dos Reels.
+              Gerencie os vídeos curtos verticais (9:16).
             </p>
           </div>
           <button
@@ -477,7 +473,7 @@ export default function AdminReelsManager({
                         disabled={isConverting}
                         onClick={() => handleConvertReelToTraining(reel)}
                         className="text-[11px] font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition disabled:opacity-50"
-                        title="Converter para Treinamento Completo 16:9 (abaixo dos Reels)"
+                        title="Converter para Treinamento (16:9)"
                       >
                         <MonitorPlay className="w-3.5 h-3.5 text-rose-600" />
                         <span>{isConverting ? 'Movendo...' : 'Mover p/ Treinamento 16:9'}</span>

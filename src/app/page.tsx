@@ -2,10 +2,8 @@ import CategoryCards from '@/components/CategoryCards';
 import ArticleCard from '@/components/ArticleCard';
 import HeroMedia from '@/components/HeroMedia';
 import SearchResultsAnchor from '@/components/SearchResultsAnchor';
-import BankFoldersExplorer from '@/components/BankFoldersExplorer';
 import { getOrSeedCategories } from '@/lib/categories';
 import { getFastArticlesList, getFastHeroBanner } from '@/lib/cache';
-import { getBankFolders } from '@/lib/bankFolders';
 import { smartSearchArticles } from '@/lib/search';
 import Link from 'next/link';
 import {
@@ -26,16 +24,11 @@ export default async function HomePage({
   const query = searchParams.q || '';
 
   // Executa todas as leituras em paralelo usando cache em memória
-  const [categories, heroBanner, allArticles, bankFolders] = await Promise.all([
+  const [categories, heroBanner, allArticles] = await Promise.all([
     getOrSeedCategories(),
     getFastHeroBanner(),
     getFastArticlesList(),
-    getBankFolders(),
   ]);
-
-  const allPdfArticles = allArticles.filter(
-    (art: any) => art.attachments && art.attachments.length > 0
-  );
 
   const rawArticles = query.trim()
     ? smartSearchArticles(allArticles, query)
@@ -129,15 +122,6 @@ export default async function HomePage({
 
       {/* CARDS DE CATEGORIAS FLUTUANTES (DINÂMICOS DO BANCO) */}
       <CategoryCards floating={true} initialCategories={categories} />
-
-      {/* ACESSO SEPARADO ÀS PASTAS DOS BANCOS (DRIVE & PDFs) */}
-      {!query && bankFolders.length > 0 && (
-        <BankFoldersExplorer
-          bankFolders={bankFolders}
-          pdfArticles={allPdfArticles}
-          mode="banner"
-        />
-      )}
 
       {/* SEÇÃO "ÚLTIMAS ATUALIZAÇÕES" / RESULTADOS DA PESQUISA */}
       <section id="materiais-section" className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 card-shadow space-y-6 scroll-mt-28 transition-colors">

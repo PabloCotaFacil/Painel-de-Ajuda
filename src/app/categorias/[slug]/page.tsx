@@ -1,12 +1,9 @@
 import TrainingVideoCard from '@/components/TrainingVideoCard';
 import TreinamentosReelsFeed, { type ReelFeedItem } from '@/components/TreinamentosReelsFeed';
-import BankFoldersExplorer from '@/components/BankFoldersExplorer';
 import CategoryMaterialsTabs from '@/components/CategoryMaterialsTabs';
-import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
-import { getFastArticlesList, invalidateCache } from '@/lib/cache';
+import { getFastArticlesList } from '@/lib/cache';
 import { getActiveShortReels } from '@/lib/reels';
-import { getBankFolders } from '@/lib/bankFolders';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,9 +14,11 @@ import {
   MonitorPlay,
   Sparkles,
   Home,
+  FileText,
+  ChevronRight,
 } from 'lucide-react';
 
-// ISR com revalidação inteligente a cada 60s para respostas ultrarrápidas do Edge CDN
+// ISR com revalidação a cada 60s
 export const revalidate = 60;
 
 export default async function CategoryPage({
@@ -30,16 +29,17 @@ export default async function CategoryPage({
   searchParams?: { subcat?: string };
 }) {
   const isTreinamentos = params.slug === 'treinamentos';
-  const showBankFolders = params.slug === 'imobiliario' || params.slug === 'all';
-  const [categories, allArticles, shortReels, bankFolders] = await Promise.all([
+  const [categories, allArticles, shortReels] = await Promise.all([
     getOrSeedCategories(),
     getFastArticlesList(),
     isTreinamentos ? getActiveShortReels() : Promise.resolve([]),
-    showBankFolders ? getBankFolders() : Promise.resolve([]),
   ]);
 
-  const allPdfArticles = allArticles.filter(
-    (art: any) => art.attachments && art.attachments.length > 0
+  const pdfCategories = categories.filter(
+    (c: any) =>
+      c.slug !== 'treinamentos' &&
+      c.slug !== 'imobiliario' &&
+      (c.slug.includes('pdf') || c.icon === 'file')
   );
 
   // Tratamento para "TODAS AS CATEGORIAS" (slug === 'all')
@@ -56,24 +56,36 @@ export default async function CategoryPage({
           </Link>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 card-shadow transition-colors">
-          <div className="flex items-center space-x-3 text-blue-700 dark:text-blue-400 font-extrabold text-xs uppercase tracking-wider mb-2">
-            <Layers className="w-4 h-4 text-cyan-500" />
-            <span>Biblioteca Completa</span>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 card-shadow transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-3 text-blue-700 dark:text-blue-400 font-extrabold text-xs uppercase tracking-wider mb-2">
+              <Layers className="w-4 h-4 text-cyan-500" />
+              <span>Biblioteca Completa</span>
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white">
+              Todas as Categorias & Esteiras
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
+              Visão geral de todos os materiais, regras de crédito imobiliário, PDFs e treinamentos.
+            </p>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white">
-            Todas as Categorias & Esteiras
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
-            Visão geral de todos os materiais, regras de crédito imobiliário, esteiras operacionais e treinamentos.
-          </p>
-        </div>
 
-        <BankFoldersExplorer
-          bankFolders={bankFolders}
-          pdfArticles={allPdfArticles}
-          mode="banner"
-        />
+          {pdfCategories.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {pdfCategories.map((pdfCat: any) => (
+                <Link
+                  key={pdfCat.id}
+                  href={`/categorias/${pdfCat.slug}`}
+                  className="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold transition shadow-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>{pdfCat.name}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
 
         <CategoryMaterialsTabs
           articles={allArticles}
@@ -159,12 +171,14 @@ export default async function CategoryPage({
           <div className="flex items-center space-x-2.5 text-blue-700 dark:text-blue-400 font-extrabold text-xs uppercase tracking-wider mb-2">
             {isTreinamentos ? (
               <Video className="w-4 h-4 text-rose-500" />
-            ) : category.slug === 'imobiliario' ? (
+            ) : category.slug === 'imobiliario' || category.icon === 'home' ? (
               <Home className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+            ) : category.slug.includes('pdf') || category.icon === 'file' ? (
+              <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             ) : (
               <FolderOpen className="w-4 h-4 text-cyan-500" />
             )}
-            <span>{isTreinamentos ? 'Central de Capacitação CotaFácil' : 'Esteira / Categoria'}</span>
+            <span>{isTreinamentos ? 'Central de Capacitação CotaFácil' : 'Categoria'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
             {category.name}
@@ -177,6 +191,19 @@ export default async function CategoryPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          {category.slug === 'imobiliario' &&
+            pdfCategories.map((pdfCat: any) => (
+              <Link
+                key={pdfCat.id}
+                href={`/categorias/${pdfCat.slug}`}
+                className="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold transition shadow-sm"
+              >
+                <FileText className="w-4 h-4" />
+                <span>{pdfCat.name}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            ))}
+
           {training16x9Articles.length > 0 && (
             <a
               href="#catalog-videoaulas"
@@ -275,14 +302,6 @@ export default async function CategoryPage({
             ))}
           </div>
         </section>
-      )}
-
-      {showBankFolders && bankFolders.length > 0 && (
-        <BankFoldersExplorer
-          bankFolders={bankFolders}
-          pdfArticles={manualArticles.filter((a: any) => a.attachments && a.attachments.length > 0)}
-          mode="banner"
-        />
       )}
 
       <CategoryMaterialsTabs

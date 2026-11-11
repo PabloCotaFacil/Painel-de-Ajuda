@@ -58,6 +58,9 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
     if (cat.slug === 'imobiliario' || cat.icon === 'home') {
       return <Home className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />;
     }
+    if (cat.icon === 'file' || cat.slug.includes('pdf')) {
+      return <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />;
+    }
     return <FolderOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />;
   };
 
@@ -394,13 +397,6 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
               <span>{c.name}</span>
             </Link>
           ))}
-          <Link
-            href="/bancos"
-            className="hover:text-amber-600 dark:hover:text-amber-400 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0 text-amber-700 dark:text-amber-400"
-          >
-            <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span>Pastas dos Bancos (Drive)</span>
-          </Link>
         </div>
       </div>
     </header>

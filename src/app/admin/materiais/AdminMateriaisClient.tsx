@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -28,11 +28,13 @@ import {
   MonitorPlay,
   Smartphone,
   MessageCircle,
+  Landmark,
 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import RichTextEditor from '@/components/RichTextEditor';
 import AdminReelsManager from '@/components/AdminReelsManager';
 import AdminCategoriesManager from '@/components/AdminCategoriesManager';
+import AdminBankFoldersManager from '@/components/AdminBankFoldersManager';
 import { smartSearchArticles } from '@/lib/search';
 
 interface Attachment {
@@ -75,8 +77,8 @@ export default function AdminMateriaisClient({
 }) {
   const router = useRouter();
 
-  // Navigation tab state: 'list' (Materiais Disponíveis), 'editor' (Criar/Editar), 'categories' (Categorias & Esteiras), 'banner' (Banner da Home), 'reels' (Pílulas Rápidas), 'support' (WhatsApp Suporte), 'password' (Segurança)
-  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banner' | 'reels' | 'support' | 'password'>(
+  // Navigation tab state
+  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banks' | 'banner' | 'reels' | 'support' | 'password'>(
     initialArticles.length > 0 ? 'list' : 'editor'
   );
 
@@ -84,10 +86,12 @@ export default function AdminMateriaisClient({
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [togglingVideoTypeId, setTogglingVideoTypeId] = useState<string | null>(null);
+  const handledEditQueryRef = useRef<string | null>(null);
 
   // Search and filter in articles list
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<'all' | 'video' | 'manual' | 'pdf'>('all');
 
   // Form State for Article
   const [materialKind, setMaterialKind] = useState<MaterialKind>('training_16_9');
@@ -213,14 +217,15 @@ export default function AdminMateriaisClient({
       .catch(() => {});
   }, []);
 
-  // Check URL query for ?edit=ID
+  // Check URL query for ?edit=ID (apenas uma vez por ID para não reabrir após salvar)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const editId = params.get('edit');
-      if (editId) {
+      if (editId && handledEditQueryRef.current !== editId) {
         const found = initialArticles.find((a) => a.id === editId);
         if (found) {
+          handledEditQueryRef.current = editId;
           handleEditClick(found);
         }
       }
@@ -457,6 +462,9 @@ export default function AdminMateriaisClient({
     setLinkDocUrl('');
     setShowAddLinkDoc(false);
     setMessage(null);
+    if (typeof window !== 'undefined' && window.location.search.includes('edit=')) {
+      window.history.replaceState(null, '', '/admin/materiais');
+    }
   };
 
   const handleEditClick = (art: Article) => {
@@ -687,21 +695,30 @@ export default function AdminMateriaisClient({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (res.ok) {
+      if (res.status === 413) {
+        setMessage({
+          type: 'error',
+          text: 'O tamanho do material ou anexo antigo excede o limite de envio direto. Remova anexos antigos em Base64 e reenvie pelo botão "Enviar PDF do Computador" ou via Link do Drive.',
+        });
+        setSaving(false);
+        return;
+      }
+
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        data = null;
+      }
+
+      if (res.ok && data) {
         const destinationLabel =
           finalVideoType === 'reel'
             ? 'no Feed de Reels (9:16) no topo de Treinamentos'
             : finalVideoType === 'training'
             ? 'na seção de Treinamentos Completos (16:9) logo abaixo dos Reels'
             : 'no portal';
-
-        setMessage({
-          type: 'success',
-          text: editingArticleId
-            ? `Material atualizado com sucesso (${destinationLabel})!`
-            : `Novo material publicado com sucesso ${destinationLabel}!`,
-        });
 
         // Update local articles state
         if (editingArticleId) {
@@ -713,10 +730,19 @@ export default function AdminMateriaisClient({
         }
 
         resetForm();
+        setMessage({
+          type: 'success',
+          text: editingArticleId
+            ? `Material atualizado com sucesso (${destinationLabel})!`
+            : `Novo material publicado com sucesso ${destinationLabel}!`,
+        });
         setActiveTab('list');
         router.refresh();
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erro ao salvar material' });
+        setMessage({
+          type: 'error',
+          text: data?.error || `Erro ao salvar material (Status ${res.status})`,
+        });
       }
     } catch (err) {
       setMessage({ type: 'error', text: 'Erro de conexão com o servidor' });
@@ -749,10 +775,16 @@ export default function AdminMateriaisClient({
     router.refresh();
   };
 
-  // Filtra artigos pela categoria e aplica busca inteligente multi-termos
-  const categoryFiltered = articles.filter(
-    (art) => selectedCategoryFilter === 'all' || art.categoryId === selectedCategoryFilter
-  );
+  // Filtra artigos pela categoria, tipo e aplica busca inteligente multi-termos
+  const categoryFiltered = articles.filter((art) => {
+    const matchCategory =
+      selectedCategoryFilter === 'all' || art.categoryId === selectedCategoryFilter;
+    if (!matchCategory) return false;
+    if (selectedTypeFilter === 'video') return Boolean(art.videoUrl);
+    if (selectedTypeFilter === 'manual') return !art.videoUrl;
+    if (selectedTypeFilter === 'pdf') return art.attachments && art.attachments.length > 0;
+    return true;
+  });
   const filteredArticles = searchTerm.trim()
     ? smartSearchArticles(categoryFiltered, searchTerm)
     : categoryFiltered;
@@ -842,6 +874,18 @@ export default function AdminMateriaisClient({
         >
           <FolderOpen className="w-4 h-4 text-blue-600" />
           <span>Categorias & Esteiras</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('banks')}
+          className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-2 transition ${
+            activeTab === 'banks'
+              ? 'bg-amber-500 text-slate-950 shadow-md'
+              : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <Landmark className="w-4 h-4 text-amber-600" />
+          <span>Pastas dos Bancos (Drive/PDFs)</span>
         </button>
 
         <button
@@ -964,6 +1008,40 @@ export default function AdminMateriaisClient({
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Filtro rápido por tipo (Videoaulas vs Manuais/Resumos vs PDFs) */}
+          <div className="flex flex-wrap items-center gap-2">
+            {(
+              [
+                { id: 'all', label: `Todos (${articles.length})` },
+                {
+                  id: 'video',
+                  label: `📺 Videoaulas (${articles.filter((a) => Boolean(a.videoUrl)).length})`,
+                },
+                {
+                  id: 'manual',
+                  label: `📄 Manuais / Resumos (${articles.filter((a) => !a.videoUrl).length})`,
+                },
+                {
+                  id: 'pdf',
+                  label: `📎 Com PDFs (${articles.filter((a) => a.attachments.length > 0).length})`,
+                },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setSelectedTypeFilter(opt.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition ${
+                  selectedTypeFilter === opt.id
+                    ? 'bg-blue-700 text-white border-blue-700 shadow-sm'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
           {/* Articles Table / Cards */}
@@ -1342,7 +1420,7 @@ export default function AdminMateriaisClient({
                 Cole o link do YouTube (inclusive Não Listado), Vimeo, Loom ou Google Drive. O vídeo toca direto no painel sem sair do sistema.
               </p>
               <input
-                type="url"
+                type="text"
                 placeholder={
                   materialKind === 'reel_9_16'
                     ? 'ex: https://www.youtube.com/shorts/...'
@@ -1631,6 +1709,10 @@ export default function AdminMateriaisClient({
           categories={categories}
           onCategoriesChanged={fetchFreshCategories}
         />
+      )}
+
+      {activeTab === 'banks' && (
+        <AdminBankFoldersManager onSaved={() => router.refresh()} />
       )}
 
       {activeTab === 'banner' && (

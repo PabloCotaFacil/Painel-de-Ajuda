@@ -31,6 +31,7 @@ export async function PUT(
     });
 
     invalidateCache();
+    revalidatePath('/');
     revalidatePath('/categorias/treinamentos');
     return NextResponse.json(updated);
   } catch (error) {
@@ -61,12 +62,6 @@ export async function POST(
     const categories = await getOrSeedCategories();
     const treinamentosCat =
       categories.find((c: any) => c.slug === 'treinamentos') || categories[0];
-
-    try {
-      await (prisma as any).$executeRawUnsafe(`
-        ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "videoType" TEXT DEFAULT 'training';
-      `);
-    } catch (_) {}
 
     const summaryText =
       reel.description && reel.description.trim()

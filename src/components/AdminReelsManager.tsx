@@ -13,6 +13,9 @@ import {
   RotateCw,
   Eye,
   MonitorPlay,
+  Edit2,
+  Save,
+  X,
 } from 'lucide-react';
 import type { ShortReelItem } from '@/lib/reels';
 
@@ -25,6 +28,7 @@ export default function AdminReelsManager({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [editingReelId, setEditingReelId] = useState<string | null>(null);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -54,6 +58,27 @@ export default function AdminReelsManager({
     loadReels();
   }, []);
 
+  const handleStartEdit = (reel: ShortReelItem) => {
+    setEditingReelId(reel.id);
+    setTitle(reel.title);
+    setVideoUrl(reel.videoUrl);
+    setCategoryTag(reel.categoryTag || '');
+    setDescription(reel.description || '');
+    setOrder(Number(reel.order) || 0);
+    setFeedback(null);
+    window.scrollTo({ top: 140, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReelId(null);
+    setTitle('');
+    setVideoUrl('');
+    setCategoryTag('Crédito Imobiliário • Caixa');
+    setDescription('');
+    setOrder(0);
+    setFeedback(null);
+  };
+
   const handleCreateReel = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
@@ -65,13 +90,16 @@ export default function AdminReelsManager({
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/reels', {
-        method: 'POST',
+      const endpoint = editingReelId ? `/api/reels/${editingReelId}` : '/api/reels';
+      const method = editingReelId ? 'PUT' : 'POST';
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           videoUrl: videoUrl.trim(),
-          categoryTag: categoryTag.trim(),
+          categoryTag: categoryTag.trim() || null,
           description: description.trim() || null,
           order: Number(order) || 0,
           isActive: true,
@@ -81,10 +109,16 @@ export default function AdminReelsManager({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erro ao cadastrar reel');
+        throw new Error(data.error || 'Erro ao salvar reel');
       }
 
-      setFeedback({ type: 'success', message: 'Pílula/Reel (9:16) cadastrado com sucesso!' });
+      setFeedback({
+        type: 'success',
+        message: editingReelId
+          ? 'Pílula/Reel (9:16) atualizado com sucesso!'
+          : 'Pílula/Reel (9:16) cadastrado com sucesso!',
+      });
+      setEditingReelId(null);
       setTitle('');
       setVideoUrl('');
       setDescription('');
@@ -178,18 +212,43 @@ export default function AdminReelsManager({
         </div>
       )}
 
-      {/* Formulário de Cadastro de Novo Reel */}
-      <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-md">
-            <Sparkles className="w-5 h-5" />
+      {/* Formulário de Cadastro / Edição de Reel */}
+      <div
+        className={`border rounded-3xl p-6 sm:p-8 space-y-6 transition ${
+          editingReelId ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-slate-200'
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div
+              className={`w-10 h-10 rounded-2xl text-white flex items-center justify-center shadow-md ${
+                editingReelId
+                  ? 'bg-gradient-to-tr from-amber-500 to-orange-500'
+                  : 'bg-gradient-to-tr from-blue-600 to-cyan-500'
+              }`}
+            >
+              {editingReelId ? <Edit2 className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">
+                {editingReelId ? 'Editando Pílula Rápida (Reel 9:16)' : 'Cadastrar Nova Pílula Rápida (Reel 9:16)'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                Exclusivo para vídeos verticais curtos (YouTube Shorts 9:16). Para vídeos em <strong>16:9 (Treinamento Padrão)</strong>, utilize a aba <strong>&quot;Subir Novo Material / Vídeo&quot;</strong>.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-black text-slate-900">Cadastrar Nova Pílula Rápida (Reel 9:16)</h3>
-            <p className="text-xs text-slate-500">
-              Exclusivo para vídeos verticais curtos (YouTube Shorts 9:16). Para vídeos em <strong>16:9 (Treinamento Padrão)</strong>, utilize a aba <strong>&quot;Publicar Novo Material&quot;</strong>.
-            </p>
-          </div>
+
+          {editingReelId && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Cancelar Edição</span>
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleCreateReel} className="space-y-4">
@@ -302,14 +361,34 @@ export default function AdminReelsManager({
             </div>
           )}
 
-          <div className="pt-2 flex justify-end">
+          <div className="pt-2 flex justify-end gap-2">
+            {editingReelId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-5 py-3 rounded-xl text-xs transition"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancelar</span>
+              </button>
+            )}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-extrabold px-6 py-3 rounded-xl text-xs transition shadow-md active:scale-95"
+              className={`inline-flex items-center space-x-2 disabled:opacity-50 font-extrabold px-6 py-3 rounded-xl text-xs transition shadow-md active:scale-95 ${
+                editingReelId
+                  ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
+                  : 'bg-blue-700 hover:bg-blue-800 text-white'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              <span>{isSubmitting ? 'Salvando...' : 'Adicionar ao Feed de Reels (9:16)'}</span>
+              {editingReelId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              <span>
+                {isSubmitting
+                  ? 'Salvando...'
+                  : editingReelId
+                  ? 'Salvar Alterações da Pílula'
+                  : 'Adicionar ao Feed de Reels (9:16)'}
+              </span>
             </button>
           </div>
         </form>
@@ -405,6 +484,16 @@ export default function AdminReelsManager({
                       </button>
 
                       <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(reel)}
+                          className="text-[11px] font-extrabold text-blue-700 hover:text-white bg-blue-50 hover:bg-blue-700 border border-blue-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                          title="Editar Pílula / Reel"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+
                         <a
                           href={reel.videoUrl}
                           target="_blank"
@@ -416,6 +505,7 @@ export default function AdminReelsManager({
                         </a>
 
                         <button
+                          type="button"
                           onClick={() => handleDeleteReel(reel.id, reel.title)}
                           className="text-xs text-rose-600 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition"
                           title="Excluir Pílula"

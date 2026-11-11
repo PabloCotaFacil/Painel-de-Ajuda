@@ -1,10 +1,12 @@
-import ArticleCard from '@/components/ArticleCard';
 import TrainingVideoCard from '@/components/TrainingVideoCard';
 import TreinamentosReelsFeed, { type ReelFeedItem } from '@/components/TreinamentosReelsFeed';
+import BankFoldersExplorer from '@/components/BankFoldersExplorer';
+import CategoryMaterialsTabs from '@/components/CategoryMaterialsTabs';
 import { prisma } from '@/lib/prisma';
 import { getOrSeedCategories } from '@/lib/categories';
 import { getFastArticlesList, invalidateCache } from '@/lib/cache';
 import { getActiveShortReels } from '@/lib/reels';
+import { getBankFolders } from '@/lib/bankFolders';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -14,7 +16,7 @@ import {
   Video,
   MonitorPlay,
   Sparkles,
-  FileText,
+  Home,
 } from 'lucide-react';
 
 // ISR com revalidação inteligente a cada 60s para respostas ultrarrápidas do Edge CDN
@@ -28,11 +30,17 @@ export default async function CategoryPage({
   searchParams?: { subcat?: string };
 }) {
   const isTreinamentos = params.slug === 'treinamentos';
-  const [categories, allArticles, shortReels] = await Promise.all([
+  const showBankFolders = params.slug === 'imobiliario' || params.slug === 'all';
+  const [categories, allArticles, shortReels, bankFolders] = await Promise.all([
     getOrSeedCategories(),
     getFastArticlesList(),
     isTreinamentos ? getActiveShortReels() : Promise.resolve([]),
+    showBankFolders ? getBankFolders() : Promise.resolve([]),
   ]);
+
+  const allPdfArticles = allArticles.filter(
+    (art: any) => art.attachments && art.attachments.length > 0
+  );
 
   // Tratamento para "TODAS AS CATEGORIAS" (slug === 'all')
   if (params.slug === 'all') {
@@ -61,27 +69,17 @@ export default async function CategoryPage({
           </p>
         </div>
 
-        <section className="space-y-4">
-          <div className="border-b border-slate-200 dark:border-slate-800 pb-2">
-            <h2 className="text-lg font-black text-slate-900 dark:text-white">
-              Todos os Materiais Publicados ({allArticles.length})
-            </h2>
-          </div>
+        <BankFoldersExplorer
+          bankFolders={bankFolders}
+          pdfArticles={allPdfArticles}
+          mode="banner"
+        />
 
-          {allArticles.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800">
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">
-                Nenhum material cadastrado ainda.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allArticles.map((art) => (
-                <ArticleCard key={art.id} article={art} />
-              ))}
-            </div>
-          )}
-        </section>
+        <CategoryMaterialsTabs
+          articles={allArticles}
+          categoryName="Todas as Categorias"
+          isTreinamentos={false}
+        />
       </div>
     );
   }
@@ -161,6 +159,8 @@ export default async function CategoryPage({
           <div className="flex items-center space-x-2.5 text-blue-700 dark:text-blue-400 font-extrabold text-xs uppercase tracking-wider mb-2">
             {isTreinamentos ? (
               <Video className="w-4 h-4 text-rose-500" />
+            ) : category.slug === 'imobiliario' ? (
+              <Home className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
             ) : (
               <FolderOpen className="w-4 h-4 text-cyan-500" />
             )}
@@ -277,37 +277,20 @@ export default async function CategoryPage({
         </section>
       )}
 
-      <section className="space-y-4">
-        <div className="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center space-x-2.5">
-          <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <div>
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-              {isTreinamentos
-                ? `Apostilas, Manuais & Roteiros de Treinamento (${manualArticles.length})`
-                : `Manuais & Materiais de Apoio — ${category.name} (${manualArticles.length})`}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Documentos oficiais, esteiras operacionais e materiais de leitura complementares.
-            </p>
-          </div>
-        </div>
+      {showBankFolders && bankFolders.length > 0 && (
+        <BankFoldersExplorer
+          bankFolders={bankFolders}
+          pdfArticles={manualArticles.filter((a: any) => a.attachments && a.attachments.length > 0)}
+          mode="banner"
+        />
+      )}
 
-        {manualArticles.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800">
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">
-              {training16x9Articles.length > 0 || reels.length > 0
-                ? 'Todos os materiais cadastrados para esta categoria estão disponíveis em formato de vídeo acima.'
-                : 'Nenhum material cadastrado nesta categoria ainda.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {manualArticles.map((art) => (
-              <ArticleCard key={art.id} article={art} />
-            ))}
-          </div>
-        )}
-      </section>
+      <CategoryMaterialsTabs
+        articles={manualArticles}
+        categoryName={category.name}
+        isTreinamentos={isTreinamentos}
+        hasVideosAbove={training16x9Articles.length > 0 || reels.length > 0}
+      />
     </div>
   );
 }

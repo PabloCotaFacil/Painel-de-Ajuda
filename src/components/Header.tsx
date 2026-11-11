@@ -14,6 +14,7 @@ import {
   X,
   ArrowRight,
   Loader2,
+  FolderOpen,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -38,7 +39,9 @@ interface SearchReelResult {
 }
 
 export default function Header({ initialSearch = '' }: { initialSearch?: string }) {
-    const [navCategories, setNavCategories] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+    const [navCategories, setNavCategories] = useState<Array<{ id: string; name: string; slug: string; icon?: string | null }>>([
+      { id: 'default-imobiliario', name: 'Crédito Imobiliário', slug: 'imobiliario', icon: 'home' },
+    ]);
 
   useEffect(() => {
     fetch('/api/categories')
@@ -50,6 +53,13 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
       })
       .catch(console.error);
   }, []);
+
+  const renderCategoryIcon = (cat: { slug: string; icon?: string | null }) => {
+    if (cat.slug === 'imobiliario' || cat.icon === 'home') {
+      return <Home className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" />;
+    }
+    return <FolderOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />;
+  };
 
   const [search, setSearch] = useState(initialSearch);
   const [isOpen, setIsOpen] = useState(false);
@@ -380,9 +390,17 @@ export default function Header({ initialSearch = '' }: { initialSearch?: string 
               href={`/categorias/${c.slug}`}
               className="hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0"
             >
+              {renderCategoryIcon(c)}
               <span>{c.name}</span>
             </Link>
           ))}
+          <Link
+            href="/bancos"
+            className="hover:text-amber-600 dark:hover:text-amber-400 transition flex items-center space-x-1.5 whitespace-nowrap shrink-0 text-amber-700 dark:text-amber-400"
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Pastas dos Bancos (Drive)</span>
+          </Link>
         </div>
       </div>
     </header>

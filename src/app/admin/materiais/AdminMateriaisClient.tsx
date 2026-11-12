@@ -76,7 +76,7 @@ export default function AdminMateriaisClient({
   const router = useRouter();
 
   // Navigation tab state
-  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banner' | 'reels' | 'support' | 'password'>(
+  const [activeTab, setActiveTab] = useState<'list' | 'editor' | 'categories' | 'banner' | 'reels' | 'support' | 'ai' | 'password'>(
     initialArticles.length > 0 ? 'list' : 'editor'
   );
 
@@ -285,6 +285,56 @@ export default function AdminMateriaisClient({
       })
       .catch(() => {});
   }, []);
+
+  // AI Assistant Settings State
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai'>('gemini');
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiMaskedKey, setAiMaskedKey] = useState('');
+  const [aiHasKey, setAiHasKey] = useState(false);
+  const [aiSource, setAiSource] = useState<'admin' | 'env' | 'none'>('none');
+  const [savingAi, setSavingAi] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/ai-config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.provider) {
+          setAiProvider(data.provider === 'openai' ? 'openai' : 'gemini');
+          setAiHasKey(Boolean(data.hasKey));
+          setAiMaskedKey(data.maskedKey || '');
+          setAiSource(data.source || 'none');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveAiConfig = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSavingAi(true);
+    setAiFeedback(null);
+    try {
+      const res = await fetch('/api/ai-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: aiProvider,
+          apiKey: aiApiKey.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar configuração da IA');
+      setAiHasKey(Boolean(data.hasKey));
+      setAiMaskedKey(data.maskedKey || '');
+      setAiSource(data.hasKey ? 'admin' : 'none');
+      setAiApiKey('');
+      setAiFeedback({ type: 'success', text: 'Configurações do Assistente IA atualizadas!' });
+    } catch (err: any) {
+      setAiFeedback({ type: 'error', text: err.message || 'Erro ao salvar.' });
+    } finally {
+      setSavingAi(false);
+    }
+  };
 
   const handleSaveSupport = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -927,6 +977,18 @@ export default function AdminMateriaisClient({
         >
           <MessageCircle className="w-4 h-4 text-emerald-600" />
           <span>Suporte WhatsApp</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ai')}
+          className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-2 transition ${
+            activeTab === 'ai'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+          }`}
+        >
+          <Sparkles className={`w-4 h-4 ${activeTab === 'ai' ? 'text-white' : 'text-indigo-600'}`} />
+          <span>Assistente IA</span>
         </button>
 
         <button
@@ -2247,6 +2309,115 @@ export default function AdminMateriaisClient({
               >
                 <MessageCircle className="w-4 h-4 text-white" />
                 <span>{savingSupport ? 'Salvando...' : 'Salvar Configurações de Suporte'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* TAB: CONFIGURAÇÃO DO ASSISTENTE IA */}
+      {activeTab === 'ai' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 card-shadow space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-2">
+            <div>
+              <div className="flex items-center space-x-2 text-indigo-600 font-extrabold text-xs uppercase tracking-wider mb-1">
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <span>Inteligência Artificial nos Materiais</span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900">
+                Configuração do Assistente IA
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Conecte uma chave do Google Gemini ou OpenAI para respostas completas com leitura direta dos PDFs. Sem chave, o assistente usa busca interna automática.
+              </p>
+            </div>
+            <div className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 shrink-0">
+              {aiHasKey ? (
+                <span className="text-emerald-700">
+                  Chave ativa ({aiSource === 'env' ? 'Variável de ambiente' : aiMaskedKey})
+                </span>
+              ) : (
+                <span className="text-amber-700">Modo busca interna (sem chave)</span>
+              )}
+            </div>
+          </div>
+
+          {aiFeedback && (
+            <div
+              className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                aiFeedback.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                  : 'bg-rose-50 text-rose-800 border border-rose-300'
+              }`}
+            >
+              {aiFeedback.type === 'success' ? (
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{aiFeedback.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveAiConfig} className="space-y-5 max-w-xl">
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1.5">
+                PROVEDOR DE IA
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAiProvider('gemini')}
+                  className={`py-3 px-4 rounded-xl border text-xs font-extrabold transition cursor-pointer ${
+                    aiProvider === 'gemini'
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Google Gemini (Lê PDFs nativamente)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiProvider('openai')}
+                  className={`py-3 px-4 rounded-xl border text-xs font-extrabold transition cursor-pointer ${
+                    aiProvider === 'openai'
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  OpenAI (GPT-4o mini)
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-extrabold text-slate-700 block mb-1">
+                CHAVE DE API (API KEY)
+              </label>
+              <input
+                type="password"
+                placeholder={
+                  aiProvider === 'gemini'
+                    ? 'Cole sua chave Gemini (ex: AIza...)'
+                    : 'Cole sua chave OpenAI (ex: sk-...)'
+                }
+                value={aiApiKey}
+                onChange={(e) => setAiApiKey(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Deixe em branco para remover a chave salva no painel (ou manter a variável de ambiente do servidor).
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={savingAi}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs transition shadow-lg shadow-indigo-600/20 flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4 text-white" />
+                <span>{savingAi ? 'Salvando...' : 'Salvar Configuração da IA'}</span>
               </button>
             </div>
           </form>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, ExternalLink } from 'lucide-react';
+import NotebookAssistant from './NotebookAssistant';
 
 function WhatsAppIcon({ className = 'w-9 h-9' }: { className?: string }) {
   return (
@@ -29,6 +30,7 @@ export default function SupportHelpDesk({
   initialHelpDeskUrl = '',
 }: SupportHelpDeskProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsappNumber);
   const [defaultMessage, setDefaultMessage] = useState(initialDefaultMessage);
   const [helpDeskUrl, setHelpDeskUrl] = useState(initialHelpDeskUrl);
@@ -52,7 +54,17 @@ export default function SupportHelpDesk({
   const waLink = `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`}?text=${encodedMessage}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 select-none flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-50 select-none flex flex-col items-end gap-3">
+      {/* Assistente IA estilo NotebookLM acima do botão do WhatsApp */}
+      <NotebookAssistant
+        isOpen={isAiOpen}
+        onToggle={() => {
+          setIsAiOpen((prev) => !prev);
+          setIsOpen(false);
+        }}
+        onClose={() => setIsAiOpen(false)}
+      />
+
       {/* Menu flutuante de atendimento rápido */}
       {isOpen && (
         <div className="mb-3 w-80 sm:w-88 bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3.5 animate-in fade-in slide-in-from-bottom-4 duration-200">
@@ -112,9 +124,12 @@ export default function SupportHelpDesk({
       {/* Botão de Disparo Flutuante - Grande, Verde WhatsApp Oficial e Chamativo */}
       <div className="flex items-center space-x-3">
         {/* Balão de chamada (badge) que destaca o suporte no desktop */}
-        {!isOpen && (
+        {!isOpen && !isAiOpen && (
           <div
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              setIsOpen(true);
+              setIsAiOpen(false);
+            }}
             className="hidden sm:flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold px-3.5 py-2 rounded-full shadow-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-transform hover:-translate-x-1"
           >
             <span>Dúvidas? <strong className="text-emerald-600 dark:text-emerald-400">Chame no WhatsApp</strong></span>
@@ -123,7 +138,10 @@ export default function SupportHelpDesk({
 
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            setIsOpen((prev) => !prev);
+            setIsAiOpen(false);
+          }}
           className="w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white shadow-2xl shadow-emerald-600/40 hover:shadow-emerald-600/60 hover:scale-105 active:scale-95 transition-all flex items-center justify-center ring-4 ring-white dark:ring-slate-900 cursor-pointer relative group"
           title="Falar com o Suporte Operacional no WhatsApp"
           aria-label="Abrir suporte no WhatsApp"

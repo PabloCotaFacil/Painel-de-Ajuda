@@ -38,8 +38,8 @@ interface NotebookAssistantProps {
 }
 
 const STARTER_QUESTIONS = [
+  'Qual a taxa de juros do Santander?',
   'Quais documentos são exigidos para crédito imobiliário?',
-  'Como funciona a avaliação de engenharia?',
   'Quais são as regras do FGTS no financiamento?',
 ];
 
@@ -184,9 +184,9 @@ export default function NotebookAssistant({
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h4 className="font-bold text-sm leading-tight">Assistente dos Materiais</h4>
+                <h4 className="font-bold text-sm leading-tight">CotaFácil IA</h4>
                 <p className="text-[11px] text-blue-100 leading-tight">
-                  Busca nos manuais, PDFs e vídeos do painel
+                  Respostas diretas com base nos manuais e PDFs
                 </p>
               </div>
             </div>
@@ -220,10 +220,10 @@ export default function NotebookAssistant({
               <div className="space-y-3 py-2">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-sm">
                   <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 mb-1">
-                    Pergunte qualquer coisa sobre os materiais
+                    Pergunte qualquer coisa
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Consulto os artigos, guias de bancos, PDFs e videoaulas publicados no sistema e indico as fontes exatas.
+                    Consulto os manuais, tabelas, regras e PDFs dos bancos e respondo direto ao ponto.
                   </p>
                 </div>
 
@@ -259,6 +259,12 @@ export default function NotebookAssistant({
                   ) : (
                     <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl rounded-bl-sm p-3.5 shadow-sm space-y-3">
                       <FormattedAnswer text={msg.content} />
+
+                      {msg.needsApiKey && (
+                        <div className="text-[11px] leading-snug text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg px-2.5 py-2">
+                          Chave da IA não configurada: exibindo apenas trechos da busca interna. Para respostas formuladas com leitura dos PDFs, cole sua chave Gemini em <strong>Admin → Assistente IA</strong>.
+                        </div>
+                      )}
 
                       {msg.sources && msg.sources.length > 0 && (
                         <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
@@ -337,7 +343,7 @@ export default function NotebookAssistant({
             className="hidden sm:flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold px-3.5 py-2 rounded-full shadow-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-transform hover:-translate-x-1"
           >
             <span>
-              Pergunte à <strong className="text-indigo-600 dark:text-indigo-400">IA dos Materiais</strong>
+              Pergunte à <strong className="text-indigo-600 dark:text-indigo-400">CotaFácil IA</strong>
             </span>
           </div>
         )}
@@ -346,8 +352,8 @@ export default function NotebookAssistant({
           type="button"
           onClick={onToggle}
           className="w-14 h-14 sm:w-[60px] sm:h-[60px] rounded-full bg-gradient-to-br from-blue-700 via-indigo-600 to-cyan-500 hover:brightness-110 text-white shadow-2xl shadow-indigo-600/35 hover:scale-105 active:scale-95 transition-all flex items-center justify-center ring-4 ring-white dark:ring-slate-900 cursor-pointer relative group"
-          title="Assistente IA dos Materiais"
-          aria-label="Abrir Assistente IA dos Materiais"
+          title="CotaFácil IA"
+          aria-label="Abrir CotaFácil IA"
         >
           {isOpen ? (
             <X className="w-6 h-6 transition-transform duration-200" />

@@ -4,6 +4,7 @@ import {
   getKnowledgeSnapshot,
   retrieveRelevantSources,
   loadInlinePdfsForSources,
+  extractRelevantSentences,
   type ScoredSource,
 } from '@/lib/aiKnowledge';
 
@@ -77,26 +78,31 @@ function buildLocalFallbackAnswer(
   if (matched.length === 0) {
     return {
       answer:
-        'Não encontrei informações diretamente correspondentes nos materiais cadastrados no painel.\n\nTente reformular a pergunta com o nome do banco ou assunto, ou fale diretamente com o suporte no botão do WhatsApp abaixo.',
+        'Não encontrei essa informação nos materiais cadastrados. Tente especificar o nome do banco ou assunto, ou fale com o suporte no WhatsApp.',
       sourcesToReturn: [],
     };
   }
 
-  const lines = matched.slice(0, 4).map((s) => {
-    const snippet = s.plainContent
-      ? s.plainContent.slice(0, 260).replace(/\n+/g, ' ').trim()
-      : s.summary;
-    const ellipsis = s.plainContent && s.plainContent.length > 260 ? '...' : '';
-    return `**[${s.index}] ${s.title}** (${s.categoryName})\n${s.summary}${
-      snippet && snippet !== s.summary ? `\n> ${snippet}${ellipsis}` : ''
-    }`;
-  });
+  const snippets: string[] = [];
+  for (const s of matched.slice(0, 3)) {
+    const sentences = extractRelevantSentences(
+      `${s.summary}\n${s.plainContent}`,
+      question,
+      2
+    );
+    if (sentences.length > 0) {
+      snippets.push(`${sentences.join(' ')} **[${s.index}]**`);
+    } else if (s.summary) {
+      snippets.push(`${s.summary} **[${s.index}]**`);
+    }
+  }
 
   return {
-    answer: `Encontrei os seguintes materiais relacionados a **"${question}"**:\n\n${lines.join(
-      '\n\n'
-    )}\n\nClique em qualquer fonte abaixo para abrir o material completo ou baixar o PDF.`,
-    sourcesToReturn: matched.slice(0, 5),
+    answer:
+      snippets.length > 0
+        ? snippets.join('\n\n')
+        : `Veja os detalhes no material **${matched[0].title}** [${matched[0].index}].`,
+    sourcesToReturn: matched.slice(0, 4),
   };
 }
 
@@ -154,13 +160,13 @@ export async function POST(request: Request) {
 
     const contextText = buildContextPrompt(sources, allTitles, snapshot.reels);
 
-    const systemInstruction = `Você é o assistente de consulta do Painel Operacional CotaFácil (estilo Google NotebookLM).
+    const systemInstruction = `Você é a CotaFácil IA, um assistente estilo Google NotebookLM que responde dúvidas operacionais lendo os manuais, artigos e PDFs do painel.
 Regras obrigatórias:
-1. Responda em português do Brasil de forma clara, objetiva e profissional.
-2. Baseie sua resposta EXCLUSIVAMENTE nos materiais, regras e PDFs fornecidos no contexto abaixo. Nunca invente taxas, prazos, documentos ou regras bancárias que não estejam nos materiais.
-3. Sempre cite as fontes usadas utilizando [1], [2], etc., exatamente conforme os números dos materiais fornecidos.
-4. Se a informação solicitada não constar em nenhum material do painel, informe claramente que não foi encontrada na base atual e oriente consultar a equipe de suporte no WhatsApp.
-5. Organize respostas com tópicos curtos quando houver listas de documentos, requisitos ou passos.`;
+1. Vá direto ao ponto e responda de forma BREVE e precisa em português do Brasil (1 a 4 frases curtas, ou tópicos enxutos se houver vários itens).
+2. Extraia exatamente o dado pedido (ex: taxas, juros, prazos, percentuais, documentos, regras por banco e modalidade como CGI vs. Financiamento) a partir dos materiais e PDFs anexos. Exemplo de estilo esperado: "No Santander, a taxa de juros para CGI é X% e para financiamento imobiliário é Y% [1]."
+3. Baseie-se EXCLUSIVAMENTE nos materiais e PDFs fornecidos. Nunca invente valores ou regras.
+4. Cite as fontes inline com [1], [2], etc. Não liste títulos de artigos à toa como se fosse uma barra de busca.
+5. Se a informação não estiver nos materiais ou PDFs atuais, diga objetivamente que não consta nos materiais publicados e oriente confirmar no WhatsApp de suporte.`;
 
     if (provider === 'openai') {
       const messages = [
@@ -177,7 +183,7 @@ Regras obrigatórias:
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          temperature: 0.2,
+          temperature: 0.15,
           messages,
         }),
       });
@@ -261,8 +267,8 @@ Regras obrigatórias:
             },
           ],
           generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1500,
+            temperature: 0.15,
+            maxOutputTokens: 1200,
           },
         }),
       }

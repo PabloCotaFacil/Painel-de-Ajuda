@@ -213,43 +213,71 @@ export function retrieveRelevantSources(
 }
 
 /**
- * Busca até 2 PDFs em StoredFile ligados às fontes mais relevantes (máx 4MB cada)
+ * Extrai as frases/linhas mais relevantes de um texto para a pergunta informada.
+ */
+export function extractRelevantSentences(
+  text: string,
+  question: string,
+  maxSentences = 3
+): string[] {
+  if (!text) return [];
+  const qNorm = normalize(question);
+  const tokens = qNorm
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 2 && !STOP_WORDS.has(t));
+
+  const chunks = text
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((c) => c.trim())
+    .filter((c) => c.length >= 15);
+
+  if (chunks.length === 0) return [];
+
+  const scored = chunks.map((chunk, idx) => {
+    const cNorm = normalize(chunk);
+    let score = 0;
+    for (const token of tokens) {
+      if (cNorm.includes(token)) score += 3;
+    }
+    if (/%|r\$|taxa|juros|prazo|renda|fgts|entrada|valor|banco/i.test(chunk)) {
+      score += 1;
+    }
+    return { chunk, score, idx };
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+  const best = scored.filter((s) => s.score > 0).slice(0, maxSentences);
+  return best.map((b) => b.chunk);
+}
+
+/**
+ * Busca até 3 PDFs em StoredFile ou Attachment inline ligados às fontes mais relevantes (máx 4MB cada)
  * para envio multimodal nativo ao Gemini (leitura real de PDFs estilo NotebookLM).
  */
 export async function loadInlinePdfsForSources(
   sources: ScoredSource[]
 ): Promise<Array<{ name: string; sourceIndex: number; base64Data: string; mimeType: string }>> {
-  const candidates: Array<{ fileId: string; name: string; sourceIndex: number }> = [];
+  const fileCandidates: Array<{ fileId: string; name: string; sourceIndex: number }> = [];
+  const inlineCandidates: Array<{ attachmentId: string; name: string; sourceIndex: number }> = [];
 
   for (const src of sources) {
     for (const att of src.attachments) {
       if (att.fileUrl.startsWith('/api/files/')) {
         const fileId = att.fileUrl.replace('/api/files/', '').split('?')[0].trim();
         if (fileId) {
-          candidates.push({ fileId, name: att.name, sourceIndex: src.index });
+          fileCandidates.push({ fileId, name: att.name, sourceIndex: src.index });
         }
+      } else if (att.fileUrl === 'data-uri-inline') {
+        inlineCandidates.push({ attachmentId: att.id, name: att.name, sourceIndex: src.index });
       }
-      if (candidates.length >= 2) break;
+      if (fileCandidates.length + inlineCandidates.length >= 3) break;
     }
-    if (candidates.length >= 2) break;
+    if (fileCandidates.length + inlineCandidates.length >= 3) break;
   }
 
-  if (candidates.length === 0) return [];
+  if (fileCandidates.length === 0 && inlineCandidates.length === 0) return [];
 
   try {
-    const files = await prisma.storedFile.findMany({
-      where: {
-        id: { in: candidates.map((c) => c.fileId) },
-        size: { lte: 4 * 1024 * 1024 },
-      },
-      select: {
-        id: true,
-        name: true,
-        mimeType: true,
-        data: true,
-      },
-    });
-
     const results: Array<{
       name: string;
       sourceIndex: number;
@@ -257,15 +285,54 @@ export async function loadInlinePdfsForSources(
       mimeType: string;
     }> = [];
 
-    for (const f of files) {
-      const cand = candidates.find((c) => c.fileId === f.id);
-      if (!cand || !f.data) continue;
-      results.push({
-        name: f.name,
-        sourceIndex: cand.sourceIndex,
-        base64Data: f.data,
-        mimeType: f.mimeType || 'application/pdf',
+    if (fileCandidates.length > 0) {
+      const files = await prisma.storedFile.findMany({
+        where: {
+          id: { in: fileCandidates.map((c) => c.fileId) },
+          size: { lte: 4 * 1024 * 1024 },
+        },
+        select: {
+          id: true,
+          name: true,
+          mimeType: true,
+          data: true,
+        },
       });
+
+      for (const f of files) {
+        const cand = fileCandidates.find((c) => c.fileId === f.id);
+        if (!cand || !f.data) continue;
+        results.push({
+          name: f.name,
+          sourceIndex: cand.sourceIndex,
+          base64Data: f.data,
+          mimeType: f.mimeType || 'application/pdf',
+        });
+      }
+    }
+
+    if (inlineCandidates.length > 0) {
+      const atts = await prisma.attachment.findMany({
+        where: { id: { in: inlineCandidates.map((c) => c.attachmentId) } },
+        select: { id: true, name: true, fileUrl: true },
+      });
+
+      for (const a of atts) {
+        const cand = inlineCandidates.find((c) => c.attachmentId === a.id);
+        if (!cand || !a.fileUrl.startsWith('data:')) continue;
+        const commaIdx = a.fileUrl.indexOf(',');
+        if (commaIdx === -1) continue;
+        const header = a.fileUrl.slice(5, commaIdx);
+        const mimeType = header.split(';')[0] || 'application/pdf';
+        const base64Data = a.fileUrl.slice(commaIdx + 1);
+        if (base64Data.length > 5.5 * 1024 * 1024) continue;
+        results.push({
+          name: a.name,
+          sourceIndex: cand.sourceIndex,
+          base64Data,
+          mimeType,
+        });
+      }
     }
 
     return results;
